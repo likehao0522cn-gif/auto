@@ -1,0 +1,40 @@
+﻿name: iOS CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run core tests with SwiftPM
+        run: swift test
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Show tool versions
+        run: |
+          xcodebuild -version
+          xcrun simctl list devices available | head -30
+
+      - name: Run unit tests
+        run: |
+          set -euo pipefail
+          DEVICE_ID=$(xcrun simctl list devices available --json | jq -r '[.devices[][] | select(.name | startswith("iPhone"))][0].udid')
+          echo "Using simulator: $DEVICE_ID"
+          xcodebuild test \
+            -project TuneMetronome.xcodeproj \
+            -scheme TuneMetronome \
+            -destination "platform=iOS Simulator,id=$DEVICE_ID" \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO
+

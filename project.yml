@@ -1,0 +1,77 @@
+﻿name: TuneMetronome
+options:
+  bundleIdPrefix: com.shm06
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+    TARGETED_DEVICE_FAMILY: "1"
+    DEVELOPMENT_TEAM: ""
+targets:
+  TuneCore:
+    type: framework
+    platform: iOS
+    sources:
+      - path: Core/Sources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.shm06.TuneMetronome.Core
+        GENERATE_INFOPLIST_FILE: YES
+        SKIP_INSTALL: YES
+  TuneCoreTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Core/Tests
+    dependencies:
+      - target: TuneCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.shm06.TuneMetronome.CoreTests
+        GENERATE_INFOPLIST_FILE: YES
+  TuneMetronome:
+    type: application
+    platform: iOS
+    sources:
+      - path: App/Sources
+    info:
+      path: App/Resources/Info.plist
+      properties:
+        CFBundleDisplayName: 调音节拍器
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "1"
+        NSMicrophoneUsageDescription: 调音节拍器需要使用麦克风来识别乐器音高。音频只在设备上分析，不会录音或上传。
+        UIBackgroundModes:
+          - audio
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+    dependencies:
+      - target: TuneCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.shm06.TuneMetronome
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: App/Resources/Info.plist
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        CODE_SIGN_STYLE: Automatic
+schemes:
+  TuneMetronome:
+    build:
+      targets:
+        TuneMetronome: all
+        TuneCoreTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      gatherCoverageData: true
+      targets:
+        - name: TuneCoreTests
+
