@@ -72,7 +72,7 @@ public enum PitchMath {
         guard let midi = midi(forFrequency: frequency, concertA: concertA) else { return nil }
         let nearestMIDI = Int(midi.rounded())
         let note = Note(midi: nearestMIDI)
-        let target = frequency(for: note, concertA: concertA)
+        let target = Self.frequency(for: note, concertA: concertA)
         guard let cents = cents(from: frequency, to: target), cents.isFinite else { return nil }
         return NearestNote(note: note, midi: midi, cents: cents)
     }
@@ -80,10 +80,11 @@ public enum PitchMath {
     public static func formatCents(_ cents: Double) -> String {
         let rounded = Int(cents.rounded())
         if rounded == 0 {
-            return "准"
+            return "鍑?
         }
-        return rounded > 0 ? "高 \(rounded) 音分" : "低 \(abs(rounded)) 音分"
+        return rounded > 0 ? "楂?\(rounded) 闊冲垎" : "浣?\(abs(rounded)) 闊冲垎"
     }
 }
+
 
 

@@ -58,7 +58,7 @@ public struct PitchDetector: Sendable {
         }
 
         var windowLength = samples.count - tauMax
-        guard windowLength > tauMax else {
+        if windowLength <= tauMax {
             tauMax = max(tauMin + 2, samples.count / 3)
             windowLength = samples.count - tauMax
         }
@@ -135,3 +135,4 @@ public struct PitchDetector: Sendable {
         return PitchEstimate(frequency: frequency, confidence: confidence, rms: rms)
     }
 }
+
