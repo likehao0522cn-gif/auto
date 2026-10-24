@@ -21,15 +21,18 @@ public struct PitchDetector: Sendable {
     public let minFrequency: Double
     public let maxFrequency: Double
     public let threshold: Double
+    public let sampleStep: Int
 
     public init(
         minFrequency: Double = 27.5,
         maxFrequency: Double = 4200,
-        threshold: Double = 0.12
+        threshold: Double = 0.12,
+        sampleStep: Int = 4
     ) {
         self.minFrequency = minFrequency
         self.maxFrequency = maxFrequency
         self.threshold = threshold
+        self.sampleStep = max(1, sampleStep)
     }
 
     public func detect(samples: [Float], sampleRate: Double) -> PitchEstimate {
@@ -37,62 +40,10 @@ public struct PitchDetector: Sendable {
             return PitchEstimate(frequency: nil, confidence: 0, rms: 0)
         }
 
-        let mono = downmix(samples)
-        let centered = centeredSamples(mono)
+        let centered = centeredSamples(samples)
         let rms = rootMeanSquare(centered)
         guard rms >= 0.0005 else {
             return PitchEstimate(frequency: nil, confidence: 0, rms: rms)
-        }
-
-        let candidates = [
-            detectBand(
-                centered: centered,
-                sampleRate: sampleRate,
-                minFrequency: max(minFrequency, 656),
-                maxFrequency: maxFrequency,
-                sampleStep: 8,
-                minimumWindow: 512
-            ),
-            detectBand(
-                centered: centered,
-                sampleRate: sampleRate,
-                minFrequency: max(minFrequency, 55),
-                maxFrequency: min(maxFrequency, 1300),
-                sampleStep: 4,
-                minimumWindow: 512
-            ),
-            detectBand(
-                centered: centered,
-                sampleRate: sampleRate,
-                minFrequency: minFrequency,
-                maxFrequency: min(maxFrequency, 700),
-                sampleStep: 4,
-                minimumWindow: 1_024
-            )
-        ].compactMap { $0 }
-
-        guard let best = candidates.max(by: { $0.confidence < $1.confidence }) else {
-            return PitchEstimate(frequency: nil, confidence: 0, rms: rms)
-        }
-
-        return PitchEstimate(frequency: best.frequency, confidence: best.confidence, rms: rms)
-    }
-
-    private struct Candidate {
-        let frequency: Double
-        let confidence: Double
-    }
-
-    private func detectBand(
-        centered: [Double],
-        sampleRate: Double,
-        minFrequency: Double,
-        maxFrequency: Double,
-        sampleStep: Int,
-        minimumWindow: Int
-    ) -> Candidate? {
-        guard sampleRate > 0, minFrequency > 0, maxFrequency > minFrequency else {
-            return nil
         }
 
         let tauMin = max(2, Int(floor(sampleRate / maxFrequency)))
@@ -100,12 +51,15 @@ public struct PitchDetector: Sendable {
             centered.count / 2,
             Int(ceil(sampleRate / minFrequency))
         )
-        guard tauMax > tauMin + 2 else { return nil }
+        guard tauMax > tauMin + 2 else {
+            return PitchEstimate(frequency: nil, confidence: 0, rms: rms)
+        }
 
         let availableWindow = centered.count - tauMax
-        guard availableWindow > tauMax else { return nil }
-        let windowLength = min(availableWindow, max(minimumWindow, tauMax * 3))
-        guard windowLength > 0 else { return nil }
+        guard availableWindow > tauMax else {
+            return PitchEstimate(frequency: nil, confidence: 0, rms: rms)
+        }
+        let windowLength = min(availableWindow, max(512, tauMax * 3))
 
         var difference = [Double](repeating: 0, count: tauMax + 1)
         for tau in 1...tauMax {
@@ -143,12 +97,14 @@ public struct PitchDetector: Sendable {
                 bestValue = normalized[tau]
                 bestTau = tau
             }
-            guard bestValue < 0.35 else { return nil }
+            guard bestValue < 0.35 else {
+                return PitchEstimate(frequency: nil, confidence: max(0, 1 - bestValue), rms: rms)
+            }
             candidate = min(bestTau, tauMax - 1)
         }
 
         guard let tau = candidate, tau > tauMin, tau < tauMax else {
-            return nil
+            return PitchEstimate(frequency: nil, confidence: 0, rms: rms)
         }
 
         let y0 = normalized[tau - 1]
@@ -160,33 +116,32 @@ public struct PitchDetector: Sendable {
             let offset = (y0 - y2) / denominator
             refinedTau += max(-1, min(1, offset))
         }
-        guard refinedTau > 0 else { return nil }
+        guard refinedTau > 0 else {
+            return PitchEstimate(frequency: nil, confidence: 0, rms: rms)
+        }
 
         let frequency = sampleRate / refinedTau
         guard frequency.isFinite,
               frequency >= minFrequency * 0.95,
               frequency <= maxFrequency * 1.05 else {
-            return nil
+            return PitchEstimate(frequency: nil, confidence: 0, rms: rms)
         }
 
-        return Candidate(
+        return PitchEstimate(
             frequency: frequency,
-            confidence: max(0, min(1, 1 - y1))
+            confidence: max(0, min(1, 1 - y1)),
+            rms: rms
         )
     }
 
-    private func downmix(_ samples: [Float]) -> [Double] {
-        samples.map(Double.init)
-    }
-
-    private func centeredSamples(_ samples: [Double]) -> [Double] {
+    private func centeredSamples(_ samples: [Float]) -> [Double] {
         guard !samples.isEmpty else { return [] }
         var mean = 0.0
         for value in samples {
-            mean += value
+            mean += Double(value)
         }
         mean /= Double(samples.count)
-        return samples.map { $0 - mean }
+        return samples.map { Double($0) - mean }
     }
 
     private func rootMeanSquare(_ samples: [Double]) -> Double {
