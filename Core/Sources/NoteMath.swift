@@ -48,7 +48,6 @@ public struct NearestNote: Equatable, Sendable {
 public enum PitchMath {
     public static let referenceMIDI: Double = 69
     public static let semitonesPerOctave: Double = 12
-    public static let centsPerSemitone: Double = 100
 
     public static func frequency(forMIDI midi: Double, concertA: Double = 440) -> Double {
         concertA * pow(2, (midi - referenceMIDI) / semitonesPerOctave)
@@ -80,11 +79,8 @@ public enum PitchMath {
     public static func formatCents(_ cents: Double) -> String {
         let rounded = Int(cents.rounded())
         if rounded == 0 {
-            return "鍑?
+            return "in tune"
         }
-        return rounded > 0 ? "楂?\(rounded) 闊冲垎" : "浣?\(abs(rounded)) 闊冲垎"
+        return rounded > 0 ? "high \(rounded) cents" : "low \(abs(rounded)) cents"
     }
 }
-
-
-
