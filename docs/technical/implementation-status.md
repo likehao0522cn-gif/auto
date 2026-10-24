@@ -1,45 +1,51 @@
-# 实现状态
+# Implementation Status
 
-更新日期：2026-10-22
+Updated: 2026-10-24
 
-## 已完成代码基线
+## Implemented
 
-- SwiftUI 应用外壳与首页
-- 调音器页面
-- 乐器、弦位和钢琴目标音选择
-- 音高检测核心算法（YIN 类自相关检测）
-- 调音结果、音名、音分和容差计算
-- 自动更新播报和短音型/触觉反馈骨架
-- 参考音播放
-- 节拍器页面
-- 拍号、重音、细分拍和预备拍设置
-- 基于 AVAudioEngine 的点击声循环
-- 测速区域和 Tap Tempo 计算
-- 设置页和帮助页
-- VoiceOver 标签与焦点顺序的初版
-- 核心单元测试
-- GitHub Actions macOS 构建/测试配置
-- XcodeGen 工程配置
+- SwiftUI application shell and home screen
+- Tuner screen
+- Instrument, string, and piano target selection
+- Pitch detection core using a YIN-style autocorrelation detector
+- Note name, cent offset, and tolerance calculation
+- Event-based tuning feedback and haptic feedback scaffolding
+- Reference tone playback
+- Metronome screen
+- Time signature, accent, subdivision, and count-in settings
+- AVAudioEngine-based metronome click loop
+- Tap tempo area and BPM estimation
+- Settings and help screens
+- Initial VoiceOver labels and focus ordering
+- Core unit tests
+- GitHub Actions macOS build and test workflow
+- XcodeGen project configuration
 
-## 尚未完成或尚未验证
+## Verified
 
-- GitHub Actions 尚未运行，代码尚未经过真实 Xcode 编译
-- 尚未生成 TestFlight 构建
-- 音量键拦截尚未实现
-- VoiceOver 真实语音、朗读重叠和设备焦点顺序尚未真机验证
-- 触觉反馈尚未真机验证
-- 节拍器后台、锁屏和音频路由尚未真机验证
-- 钢琴低音准确度和真实乐器音色尚未验证
-- 古筝、琵琶弦位数据仍需最终核对
-- 中英文完整本地化尚未实现
-- 固定唱名设置尚未接入 UI
-- 节拍器音色选择尚未实现
-- 应用图标、正式名称和 App Store 配置尚未完成
+- 2026-10-24: GitHub Actions `iOS CI` completed successfully.
+- SwiftPM core tests: 26 passed, 0 failures.
+- Xcode iOS Simulator build and test: 26 passed, 0 failures.
+- Run: https://github.com/likehao0522cn-gif/auto/actions/runs/40051338829
+- Unit test coverage: note and cent conversion, instrument presets, pitch detection, metronome timing, and tap tempo.
 
-## 下一里程碑
+## Not Yet Complete or Verified
 
-1. 把工程推送到 GitHub 私有仓库
-2. 运行 GitHub Actions 的 SwiftPM 和 Xcode 测试
-3. 修复首次编译错误
-4. 生成最小 TestFlight 构建
-5. 在 iPhone 上验证麦克风、VoiceOver、触觉和后台播放
+- No signed TestFlight build has been produced yet.
+- Volume-button tap tempo is not implemented.
+- Real VoiceOver speech, overlap, and device focus order are not verified.
+- Haptic feedback is not verified on a physical device.
+- Metronome background playback, lock screen behavior, and audio routing are not verified.
+- Piano bass accuracy and real instrument timbres are not verified.
+- Guzheng and pipa string data still need final review.
+- Full Chinese and English localization is not implemented.
+- Fixed solfege display is not wired into the UI.
+- Metronome timbre selection is not implemented.
+- App icon, final product name, and App Store configuration are not complete.
+
+## Next Milestones
+
+1. Configure Apple Developer signing and App Store Connect.
+2. Produce a TestFlight build.
+3. Verify microphone, VoiceOver, haptics, and background playback on iPhone.
+4. Fix device-specific issues and repeat TestFlight.
