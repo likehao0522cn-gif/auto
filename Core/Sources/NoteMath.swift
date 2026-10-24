@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 
 public struct Note: Equatable, Hashable, Sendable, CustomStringConvertible {
     public let midi: Int

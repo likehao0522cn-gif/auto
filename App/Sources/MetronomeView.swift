@@ -1,4 +1,4 @@
-﻿import SwiftUI
+import SwiftUI
 
 struct MetronomeView: View {
     @EnvironmentObject private var metronome: MetronomeViewModel

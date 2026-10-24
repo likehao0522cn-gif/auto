@@ -1,4 +1,4 @@
-﻿import AVFoundation
+import AVFoundation
 import TuneCore
 
 enum TunerAudioEngineError: LocalizedError {

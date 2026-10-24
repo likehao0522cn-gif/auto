@@ -1,4 +1,4 @@
-﻿import AVFoundation
+import AVFoundation
 import Foundation
 import TuneCore
 import UIKit

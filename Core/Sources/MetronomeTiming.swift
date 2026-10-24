@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 
 public struct TimeSignature: Identifiable, Hashable, Sendable, CustomStringConvertible {
     public let numerator: Int

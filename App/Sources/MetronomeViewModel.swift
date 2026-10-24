@@ -1,4 +1,4 @@
-﻿import AVFoundation
+import AVFoundation
 import Combine
 import Foundation
 import TuneCore

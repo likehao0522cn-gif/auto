@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 
 public struct PitchEstimate: Equatable, Sendable {
     public let frequency: Double?

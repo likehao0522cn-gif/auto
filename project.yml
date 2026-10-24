@@ -1,4 +1,4 @@
-﻿name: TuneMetronome
+name: TuneMetronome
 options:
   bundleIdPrefix: com.shm06
   deploymentTarget:

@@ -1,4 +1,4 @@
-﻿import XCTest
+import XCTest
 @testable import TuneCore
 
 final class NoteMathTests: XCTestCase {

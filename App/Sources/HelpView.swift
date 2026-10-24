@@ -1,4 +1,4 @@
-﻿import SwiftUI
+import SwiftUI
 
 struct HelpTopic: Identifiable {
     let id: String

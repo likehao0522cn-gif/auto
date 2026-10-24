@@ -1,4 +1,4 @@
-﻿import SwiftUI
+import SwiftUI
 
 struct StringPickerView: View {
     @EnvironmentObject private var appModel: AppModel

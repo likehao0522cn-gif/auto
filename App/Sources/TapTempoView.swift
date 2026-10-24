@@ -1,4 +1,4 @@
-﻿import SwiftUI
+import SwiftUI
 
 struct TapTempoView: View {
     @EnvironmentObject private var metronome: MetronomeViewModel

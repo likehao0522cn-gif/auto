@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 
 public enum PresetKind: String, Hashable, Sendable {
     case chromatic

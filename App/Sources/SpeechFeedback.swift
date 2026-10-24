@@ -1,4 +1,4 @@
-﻿import AVFoundation
+import AVFoundation
 
 @MainActor
 final class SpeechFeedback: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {

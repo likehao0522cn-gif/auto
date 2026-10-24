@@ -1,4 +1,4 @@
-﻿import SwiftUI
+import SwiftUI
 
 struct InstrumentPickerView: View {
     @EnvironmentObject private var appModel: AppModel

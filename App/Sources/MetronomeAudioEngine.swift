@@ -1,4 +1,4 @@
-﻿import AVFoundation
+import AVFoundation
 import TuneCore
 
 final class MetronomeAudioEngine {

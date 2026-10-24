@@ -1,4 +1,4 @@
-﻿import AVFoundation
+import AVFoundation
 
 enum AudioSessionManager {
     static func configureForTuner() throws {
