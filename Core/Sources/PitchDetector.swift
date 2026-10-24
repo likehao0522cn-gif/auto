@@ -25,7 +25,7 @@ public struct PitchDetector: Sendable {
     public init(
         minFrequency: Double = 27.5,
         maxFrequency: Double = 4200,
-        threshold: Double = 0.15
+        threshold: Double = 0.12
     ) {
         self.minFrequency = minFrequency
         self.maxFrequency = maxFrequency
@@ -48,9 +48,9 @@ public struct PitchDetector: Sendable {
             detectBand(
                 centered: centered,
                 sampleRate: sampleRate,
-                minFrequency: max(minFrequency, 630),
+                minFrequency: max(minFrequency, 656),
                 maxFrequency: maxFrequency,
-                sampleStep: 4,
+                sampleStep: 8,
                 minimumWindow: 512
             ),
             detectBand(
@@ -58,7 +58,7 @@ public struct PitchDetector: Sendable {
                 sampleRate: sampleRate,
                 minFrequency: max(minFrequency, 55),
                 maxFrequency: min(maxFrequency, 1300),
-                sampleStep: 2,
+                sampleStep: 4,
                 minimumWindow: 512
             ),
             detectBand(
