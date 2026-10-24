@@ -11,7 +11,6 @@ settings:
     SWIFT_VERSION: "5.9"
     IPHONEOS_DEPLOYMENT_TARGET: "17.0"
     TARGETED_DEVICE_FAMILY: "1"
-    DEVELOPMENT_TEAM: ""
 targets:
   TuneCore:
     type: framework
@@ -42,9 +41,11 @@ targets:
     info:
       path: App/Resources/Info.plist
       properties:
-        CFBundleDisplayName: 璋冮煶鑺傛媿鍣?        CFBundleShortVersionString: "0.1.0"
+        CFBundleDisplayName: "Tune Metronome"
+        CFBundleShortVersionString: "0.1.0"
         CFBundleVersion: "1"
-        NSMicrophoneUsageDescription: 璋冮煶鑺傛媿鍣ㄩ渶瑕佷娇鐢ㄩ害鍏嬮鏉ヨ瘑鍒箰鍣ㄩ煶楂樸€傞煶棰戝彧鍦ㄨ澶囦笂鍒嗘瀽锛屼笉浼氬綍闊虫垨涓婁紶銆?        UIBackgroundModes:
+        NSMicrophoneUsageDescription: "This app uses the microphone to detect instrument pitch. Audio is analyzed on device and is never recorded or uploaded."
+        UIBackgroundModes:
           - audio
         UILaunchScreen: {}
         UIApplicationSceneManifest:
@@ -74,4 +75,3 @@ schemes:
       gatherCoverageData: true
       targets:
         - name: TuneCoreTests
-
