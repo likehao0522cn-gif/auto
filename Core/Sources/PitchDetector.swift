@@ -21,46 +21,59 @@ public struct PitchDetector: Sendable {
     public let minFrequency: Double
     public let maxFrequency: Double
     public let threshold: Double
+    public let targetSampleRate: Double
 
     public init(
         minFrequency: Double = 27.5,
         maxFrequency: Double = 4200,
-        threshold: Double = 0.15
+        threshold: Double = 0.15,
+        targetSampleRate: Double = 11_025
     ) {
         self.minFrequency = minFrequency
         self.maxFrequency = maxFrequency
         self.threshold = threshold
+        self.targetSampleRate = targetSampleRate
     }
 
     public func detect(samples: [Float], sampleRate: Double) -> PitchEstimate {
-        guard samples.count >= 128, sampleRate > 0 else {
+        guard samples.count >= 256, sampleRate > 0, targetSampleRate > 0 else {
             return PitchEstimate(frequency: nil, confidence: 0, rms: 0)
         }
 
-        let mean = samples.reduce(0.0) { $0 + Double($1) } / Double(samples.count)
-        var centered = [Double](repeating: 0, count: samples.count)
+        let decimationFactor = max(1, Int(floor(sampleRate / targetSampleRate)))
+        let effectiveSampleRate = sampleRate / Double(decimationFactor)
+        let reduced = decimate(samples, factor: decimationFactor)
+        guard reduced.count >= 256 else {
+            return PitchEstimate(frequency: nil, confidence: 0, rms: 0)
+        }
+
+        let mean = reduced.reduce(0.0, +) / Double(reduced.count)
+        var centered = [Double](repeating: 0, count: reduced.count)
         var sumSquares = 0.0
-        for index in samples.indices {
-            let value = Double(samples[index]) - mean
+        for index in reduced.indices {
+            let value = reduced[index] - mean
             centered[index] = value
             sumSquares += value * value
         }
 
-        let rms = sqrt(sumSquares / Double(samples.count))
+        let rms = sqrt(sumSquares / Double(reduced.count))
         guard rms >= 0.0005 else {
             return PitchEstimate(frequency: nil, confidence: 0, rms: rms)
         }
 
-        let tauMin = max(2, Int(floor(sampleRate / maxFrequency)))
-        var tauMax = min(samples.count / 2, Int(ceil(sampleRate / minFrequency)))
+        let tauMin = max(2, Int(floor(effectiveSampleRate / maxFrequency)))
+        var tauMax = min(
+            centered.count / 2,
+            Int(ceil(effectiveSampleRate / minFrequency))
+        )
         guard tauMax > tauMin + 2 else {
             return PitchEstimate(frequency: nil, confidence: 0, rms: rms)
         }
 
-        var windowLength = samples.count - tauMax
+        var windowLength = centered.count - tauMax
         if windowLength <= tauMax {
-            tauMax = max(tauMin + 2, samples.count / 3)
-            windowLength = samples.count - tauMax
+            tauMax = max(tauMin + 2, centered.count / 3)
+            windowLength = centered.count - tauMax
         }
         guard windowLength > tauMax else {
             return PitchEstimate(frequency: nil, confidence: 0, rms: rms)
@@ -82,8 +95,6 @@ public struct PitchDetector: Sendable {
             runningSum += difference[tau]
             if runningSum > 0 {
                 normalized[tau] = difference[tau] * Double(tau) / runningSum
-            } else {
-                normalized[tau] = 1
             }
         }
 
@@ -130,7 +141,7 @@ public struct PitchDetector: Sendable {
             return PitchEstimate(frequency: nil, confidence: 0, rms: rms)
         }
 
-        let frequency = sampleRate / refinedTau
+        let frequency = effectiveSampleRate / refinedTau
         guard frequency.isFinite,
               frequency >= minFrequency * 0.95,
               frequency <= maxFrequency * 1.05 else {
@@ -140,5 +151,22 @@ public struct PitchDetector: Sendable {
         let confidence = max(0, min(1, 1 - y1))
         return PitchEstimate(frequency: frequency, confidence: confidence, rms: rms)
     }
-}
 
+    private func decimate(_ samples: [Float], factor: Int) -> [Double] {
+        guard factor > 1 else {
+            return samples.map(Double.init)
+        }
+
+        let outputCount = samples.count / factor
+        var output = [Double](repeating: 0, count: outputCount)
+        for outputIndex in 0..<outputCount {
+            let start = outputIndex * factor
+            var sum = 0.0
+            for offset in 0..<factor {
+                sum += Double(samples[start + offset])
+            }
+            output[outputIndex] = sum / Double(factor)
+        }
+        return output
+    }
+}

@@ -37,4 +37,18 @@ final class NoteMathTests: XCTestCase {
         let cents = PitchMath.cents(from: target, to: 440)
         XCTAssertEqual(cents ?? 0, 100, accuracy: 0.001)
     }
+
+    func testCentsFormatting() {
+        XCTAssertEqual(PitchMath.formatCents(0), "\u{51C6}")
+        XCTAssertEqual(PitchMath.formatCents(12.2), "\u{9AD8} 12 \u{97F3}\u{5206}")
+        XCTAssertEqual(PitchMath.formatCents(-12.2), "\u{4F4E} 12 \u{97F3}\u{5206}")
+    }
+
+    func testConcertAAdjustment() {
+        let adjusted = PitchMath.frequency(forMIDI: 69, concertA: 442)
+        XCTAssertEqual(adjusted, 442, accuracy: 0.0001)
+        let nearest = PitchMath.nearestNote(to: 442, concertA: 442)
+        XCTAssertEqual(nearest?.note.displayName, "A4")
+        XCTAssertEqual(nearest?.cents ?? 999, 0, accuracy: 0.001)
+    }
 }

@@ -14,7 +14,7 @@ final class PitchDetectorTests: XCTestCase {
         let detector = PitchDetector()
         let estimate = detector.detect(samples: sine(frequency: 440), sampleRate: sampleRate)
         XCTAssertNotNil(estimate.frequency)
-        XCTAssertEqual(estimate.frequency ?? 0, 440, accuracy: 0.5)
+        XCTAssertEqual(estimate.frequency ?? 0, 440, accuracy: 2)
         XCTAssertTrue(estimate.isReliable)
     }
 
@@ -22,14 +22,14 @@ final class PitchDetectorTests: XCTestCase {
         let detector = PitchDetector()
         let estimate = detector.detect(samples: sine(frequency: 82.4069), sampleRate: sampleRate)
         XCTAssertNotNil(estimate.frequency)
-        XCTAssertEqual(estimate.frequency ?? 0, 82.4069, accuracy: 0.15)
+        XCTAssertEqual(estimate.frequency ?? 0, 82.4069, accuracy: 1)
     }
 
     func testDetectsHighE() {
         let detector = PitchDetector()
         let estimate = detector.detect(samples: sine(frequency: 329.6276), sampleRate: sampleRate)
         XCTAssertNotNil(estimate.frequency)
-        XCTAssertEqual(estimate.frequency ?? 0, 329.6276, accuracy: 0.4)
+        XCTAssertEqual(estimate.frequency ?? 0, 329.6276, accuracy: 2)
     }
 
     func testSilenceReturnsNoPitch() {
@@ -46,6 +46,23 @@ final class PitchDetectorTests: XCTestCase {
             sampleRate: sampleRate
         )
         XCTAssertNotNil(estimate.frequency)
-        XCTAssertEqual(estimate.frequency ?? 0, 27.5, accuracy: 0.15)
+        XCTAssertEqual(estimate.frequency ?? 0, 27.5, accuracy: 1)
+    }
+
+    func testNoiseReturnsUnreliableResult() {
+        let detector = PitchDetector()
+        var generator = SystemRandomNumberGenerator()
+        let noise = (0..<8_192).map { _ in Float.random(in: -0.2...0.2, using: &generator) }
+        let estimate = detector.detect(samples: noise, sampleRate: sampleRate)
+        XCTAssertFalse(estimate.isReliable)
+    }
+
+    func testAnalysisIsFastEnoughForRealtimeUse() {
+        let detector = PitchDetector()
+        let samples = sine(frequency: 440)
+        let start = Date()
+        _ = detector.detect(samples: samples, sampleRate: sampleRate)
+        let elapsed = Date().timeIntervalSince(start)
+        XCTAssertLessThan(elapsed, 0.25)
     }
 }

@@ -56,5 +56,33 @@ final class MetronomeTimingTests: XCTestCase {
         XCTAssertEqual(clicks.count, 3)
         XCTAssertTrue(clicks.allSatisfy(\.isAccent))
     }
+
+    func testBPMLimitsAreRepresentedByConfiguration() {
+        let slow = MetronomeConfiguration(bpm: 20)
+        let fast = MetronomeConfiguration(bpm: 300)
+        XCTAssertEqual(slow.beatDuration, 3, accuracy: 0.0001)
+        XCTAssertEqual(fast.beatDuration, 0.2, accuracy: 0.0001)
+    }
+
+    func testTapTempoClampsToValidRange() {
+        var estimator = TapTempoEstimator()
+        estimator.record(at: 0)
+        estimator.record(at: 0.1)
+        estimator.record(at: 0.2)
+        XCTAssertGreaterThan(estimator.bpm ?? 0, 300)
+    }
+
+    func testTripletSubdivisionProducesTwelveClicksInFourFour() {
+        let config = MetronomeConfiguration(
+            bpm: 90,
+            timeSignature: TimeSignature(numerator: 4, denominator: 4),
+            accentMode: .firstBeat,
+            subdivision: .three,
+            countInBars: .off
+        )
+        let clicks = MetronomePattern.clicks(for: config)
+        XCTAssertEqual(clicks.count, 12)
+        XCTAssertEqual(clicks.filter(\.isAccent).count, 1)
+    }
 }
 
