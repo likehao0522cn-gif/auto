@@ -47,7 +47,12 @@ public struct PitchDetector: Sendable {
             return PitchEstimate(frequency: nil, confidence: 0, rms: 0)
         }
 
-        let mean = reduced.reduce(0.0, +) / Double(reduced.count)
+        var mean = 0.0
+        for value in reduced {
+            mean += value
+        }
+        mean /= Double(reduced.count)
+
         var centered = [Double](repeating: 0, count: reduced.count)
         var sumSquares = 0.0
         for index in reduced.indices {
@@ -159,13 +164,14 @@ public struct PitchDetector: Sendable {
 
         let outputCount = samples.count / factor
         var output = [Double](repeating: 0, count: outputCount)
+        let divisor = Double(factor)
         for outputIndex in 0..<outputCount {
             let start = outputIndex * factor
             var sum = 0.0
             for offset in 0..<factor {
                 sum += Double(samples[start + offset])
             }
-            output[outputIndex] = sum / Double(factor)
+            output[outputIndex] = sum / divisor
         }
         return output
     }

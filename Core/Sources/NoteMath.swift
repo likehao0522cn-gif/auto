@@ -79,8 +79,8 @@ public enum PitchMath {
     public static func formatCents(_ cents: Double) -> String {
         let rounded = Int(cents.rounded())
         if rounded == 0 {
-            return "in tune"
+            return "准"
         }
-        return rounded > 0 ? "high \(rounded) cents" : "low \(abs(rounded)) cents"
+        return rounded > 0 ? "高 \(rounded) 音分" : "低 \(abs(rounded)) 音分"
     }
 }
