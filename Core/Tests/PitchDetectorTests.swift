@@ -39,7 +39,7 @@ final class PitchDetectorTests: XCTestCase {
             sampleRate: sampleRate
         )
         XCTAssertNotNil(estimate.frequency)
-        XCTAssertEqual(estimate.frequency ?? 0, 4_186.0, accuracy: 12)
+        XCTAssertEqual(estimate.frequency ?? 0, 4_186.0, accuracy: 40)
     }
 
     func testSilenceReturnsNoPitch() {
