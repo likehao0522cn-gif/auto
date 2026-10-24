@@ -88,9 +88,15 @@ public struct PitchDetector: Sendable {
         }
 
         var candidate: Int?
-        for tau in tauMin...tauMax where normalized[tau] < threshold {
-            candidate = tau
-            break
+        if tauMax >= tauMin + 2 {
+            for tau in max(tauMin + 1, 2)...(tauMax - 1) {
+                let isLocalMinimum = normalized[tau] <= normalized[tau - 1]
+                    && normalized[tau] <= normalized[tau + 1]
+                if isLocalMinimum && normalized[tau] < threshold {
+                    candidate = tau
+                    break
+                }
+            }
         }
 
         if candidate == nil {
@@ -103,7 +109,7 @@ public struct PitchDetector: Sendable {
             guard bestValue < 0.35 else {
                 return PitchEstimate(frequency: nil, confidence: max(0, 1 - bestValue), rms: rms)
             }
-            candidate = bestTau
+            candidate = min(bestTau, tauMax - 1)
         }
 
         guard let tau = candidate, tau > tauMin, tau < tauMax else {
