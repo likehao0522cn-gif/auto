@@ -38,3 +38,32 @@ jobs:
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO
 
+      - name: Build unsigned device app
+        run: |
+          set -euo pipefail
+          xcodebuild build \
+            -project TuneMetronome.xcodeproj \
+            -scheme TuneMetronome \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Package unsigned IPA
+        run: |
+          set -euo pipefail
+          APP_PATH="$(find build/Build/Products/Release-iphoneos -maxdepth 1 -name '*.app' -type d | head -1)"
+          test -n "$APP_PATH"
+          rm -rf unsigned-ipa
+          mkdir -p unsigned-ipa/Payload
+          cp -R "$APP_PATH" unsigned-ipa/Payload/
+          cd unsigned-ipa
+          zip -qry TuneMetronome-unsigned.ipa Payload
+
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: TuneMetronome-unsigned
+          path: unsigned-ipa/TuneMetronome-unsigned.ipa
+          if-no-files-found: error
