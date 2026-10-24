@@ -22,17 +22,20 @@ public struct PitchDetector: Sendable {
     public let maxFrequency: Double
     public let threshold: Double
     public let targetSampleRate: Double
+    public let highFrequencyThreshold: Double
 
     public init(
         minFrequency: Double = 27.5,
         maxFrequency: Double = 4200,
         threshold: Double = 0.15,
-        targetSampleRate: Double = 11_025
+        targetSampleRate: Double = 9_000,
+        highFrequencyThreshold: Double = 700
     ) {
         self.minFrequency = minFrequency
         self.maxFrequency = maxFrequency
         self.threshold = threshold
         self.targetSampleRate = targetSampleRate
+        self.highFrequencyThreshold = highFrequencyThreshold
     }
 
     public func detect(samples: [Float], sampleRate: Double) -> PitchEstimate {
@@ -40,49 +43,75 @@ public struct PitchDetector: Sendable {
             return PitchEstimate(frequency: nil, confidence: 0, rms: 0)
         }
 
-        let decimationFactor = max(1, Int(floor(sampleRate / targetSampleRate)))
-        let effectiveSampleRate = sampleRate / Double(decimationFactor)
-        let reduced = decimate(samples, factor: decimationFactor)
-        guard reduced.count >= 256 else {
+        let coarseFactor = max(1, Int(floor(sampleRate / targetSampleRate)))
+        let coarseRate = sampleRate / Double(coarseFactor)
+        let coarseSamples = decimate(samples, factor: coarseFactor)
+        guard coarseSamples.count >= 256 else {
             return PitchEstimate(frequency: nil, confidence: 0, rms: 0)
         }
 
-        var mean = 0.0
-        for value in reduced {
-            mean += value
-        }
-        mean /= Double(reduced.count)
-
-        var centered = [Double](repeating: 0, count: reduced.count)
-        var sumSquares = 0.0
-        for index in reduced.indices {
-            let value = reduced[index] - mean
-            centered[index] = value
-            sumSquares += value * value
-        }
-
-        let rms = sqrt(sumSquares / Double(reduced.count))
+        let coarseCentered = centeredSamples(coarseSamples)
+        let rms = rootMeanSquare(coarseCentered)
         guard rms >= 0.0005 else {
             return PitchEstimate(frequency: nil, confidence: 0, rms: rms)
         }
 
-        let tauMin = max(2, Int(floor(effectiveSampleRate / maxFrequency)))
-        var tauMax = min(
-            centered.count / 2,
-            Int(ceil(effectiveSampleRate / minFrequency))
+        let coarseTauMin = max(2, Int(floor(coarseRate / maxFrequency)))
+        let coarseTauMax = min(
+            coarseCentered.count / 2,
+            Int(ceil(coarseRate / minFrequency))
         )
-        guard tauMax > tauMin + 2 else {
+        guard let coarse = estimateFrequency(
+            in: coarseCentered,
+            sampleRate: coarseRate,
+            tauMin: coarseTauMin,
+            tauMax: coarseTauMax,
+            windowLimit: nil
+        ) else {
             return PitchEstimate(frequency: nil, confidence: 0, rms: rms)
         }
 
-        var windowLength = centered.count - tauMax
-        if windowLength <= tauMax {
-            tauMax = max(tauMin + 2, centered.count / 3)
-            windowLength = centered.count - tauMax
+        guard coarse.frequency >= highFrequencyThreshold, coarseFactor > 1 else {
+            return PitchEstimate(frequency: coarse.frequency, confidence: coarse.confidence, rms: rms)
         }
-        guard windowLength > tauMax else {
-            return PitchEstimate(frequency: nil, confidence: 0, rms: rms)
+
+        let highFactor = max(1, Int(floor(sampleRate / 32_000)))
+        let highRate = sampleRate / Double(highFactor)
+        let highSamples = decimate(samples, factor: highFactor)
+        let highCentered = centeredSamples(highSamples)
+        let highTauMin = max(2, Int(floor(highRate / (maxFrequency * 1.05))))
+        let highTauMax = min(
+            highCentered.count / 2,
+            Int(ceil(highRate / (highFrequencyThreshold * 0.9)))
+        )
+
+        if let high = estimateFrequency(
+            in: highCentered,
+            sampleRate: highRate,
+            tauMin: highTauMin,
+            tauMax: highTauMax,
+            windowLimit: 4_096
+        ), high.frequency >= highFrequencyThreshold, high.confidence >= 0.55 {
+            return PitchEstimate(frequency: high.frequency, confidence: high.confidence, rms: rms)
         }
+
+        return PitchEstimate(frequency: coarse.frequency, confidence: coarse.confidence, rms: rms)
+    }
+
+    private func estimateFrequency(
+        in centered: [Double],
+        sampleRate: Double,
+        tauMin: Int,
+        tauMax: Int,
+        windowLimit: Int?
+    ) -> (frequency: Double, confidence: Double)? {
+        guard centered.count >= 128, sampleRate > 0, tauMax > tauMin + 2 else {
+            return nil
+        }
+
+        let availableWindow = centered.count - tauMax
+        guard availableWindow > tauMax else { return nil }
+        let windowLength = min(availableWindow, windowLimit ?? availableWindow)
 
         var difference = [Double](repeating: 0, count: tauMax + 1)
         for tau in 1...tauMax {
@@ -104,14 +133,12 @@ public struct PitchDetector: Sendable {
         }
 
         var candidate: Int?
-        if tauMax >= tauMin + 2 {
-            for tau in max(tauMin + 1, 2)...(tauMax - 1) {
-                let isLocalMinimum = normalized[tau] <= normalized[tau - 1]
-                    && normalized[tau] <= normalized[tau + 1]
-                if isLocalMinimum && normalized[tau] < threshold {
-                    candidate = tau
-                    break
-                }
+        for tau in max(tauMin + 1, 2)...(tauMax - 1) {
+            let isLocalMinimum = normalized[tau] <= normalized[tau - 1]
+                && normalized[tau] <= normalized[tau + 1]
+            if isLocalMinimum && normalized[tau] < threshold {
+                candidate = tau
+                break
             }
         }
 
@@ -122,14 +149,12 @@ public struct PitchDetector: Sendable {
                 bestValue = normalized[tau]
                 bestTau = tau
             }
-            guard bestValue < 0.35 else {
-                return PitchEstimate(frequency: nil, confidence: max(0, 1 - bestValue), rms: rms)
-            }
+            guard bestValue < 0.35 else { return nil }
             candidate = min(bestTau, tauMax - 1)
         }
 
         guard let tau = candidate, tau > tauMin, tau < tauMax else {
-            return PitchEstimate(frequency: nil, confidence: 0, rms: rms)
+            return nil
         }
 
         let y0 = normalized[tau - 1]
@@ -141,20 +166,35 @@ public struct PitchDetector: Sendable {
             let offset = (y0 - y2) / denominator
             refinedTau += max(-1, min(1, offset))
         }
+        guard refinedTau > 0 else { return nil }
 
-        guard refinedTau > 0 else {
-            return PitchEstimate(frequency: nil, confidence: 0, rms: rms)
-        }
-
-        let frequency = effectiveSampleRate / refinedTau
+        let frequency = sampleRate / refinedTau
         guard frequency.isFinite,
               frequency >= minFrequency * 0.95,
               frequency <= maxFrequency * 1.05 else {
-            return PitchEstimate(frequency: nil, confidence: 0, rms: rms)
+            return nil
         }
 
-        let confidence = max(0, min(1, 1 - y1))
-        return PitchEstimate(frequency: frequency, confidence: confidence, rms: rms)
+        return (frequency, max(0, min(1, 1 - y1)))
+    }
+
+    private func centeredSamples(_ samples: [Double]) -> [Double] {
+        guard !samples.isEmpty else { return [] }
+        var mean = 0.0
+        for value in samples {
+            mean += value
+        }
+        mean /= Double(samples.count)
+        return samples.map { $0 - mean }
+    }
+
+    private func rootMeanSquare(_ samples: [Double]) -> Double {
+        guard !samples.isEmpty else { return 0 }
+        var sumSquares = 0.0
+        for value in samples {
+            sumSquares += value * value
+        }
+        return sqrt(sumSquares / Double(samples.count))
     }
 
     private func decimate(_ samples: [Float], factor: Int) -> [Double] {

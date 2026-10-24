@@ -32,6 +32,16 @@ final class PitchDetectorTests: XCTestCase {
         XCTAssertEqual(estimate.frequency ?? 0, 329.6276, accuracy: 2)
     }
 
+    func testDetectsPianoHighC() {
+        let detector = PitchDetector()
+        let estimate = detector.detect(
+            samples: sine(frequency: 4_186.0, amplitude: 0.4),
+            sampleRate: sampleRate
+        )
+        XCTAssertNotNil(estimate.frequency)
+        XCTAssertEqual(estimate.frequency ?? 0, 4_186.0, accuracy: 12)
+    }
+
     func testSilenceReturnsNoPitch() {
         let detector = PitchDetector()
         let estimate = detector.detect(samples: [Float](repeating: 0, count: 8_192), sampleRate: sampleRate)
@@ -60,9 +70,12 @@ final class PitchDetectorTests: XCTestCase {
     func testAnalysisIsFastEnoughForRealtimeUse() {
         let detector = PitchDetector()
         let samples = sine(frequency: 440)
-        let start = Date()
         _ = detector.detect(samples: samples, sampleRate: sampleRate)
-        let elapsed = Date().timeIntervalSince(start)
-        XCTAssertLessThan(elapsed, 0.25)
+        let start = Date()
+        for _ in 0..<3 {
+            _ = detector.detect(samples: samples, sampleRate: sampleRate)
+        }
+        let elapsed = Date().timeIntervalSince(start) / 3
+        XCTAssertLessThan(elapsed, 0.2)
     }
 }
