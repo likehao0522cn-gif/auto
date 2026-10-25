@@ -53,7 +53,6 @@ final class TunerViewModel: ObservableObject {
     private var autoUpdateCount: Int = 0
     private var isSpeechActive = false
     private var onSpeechComplete: (() -> Void)?
-    private var startedAtLeastOnce = false
 
     init() {
         speech.onFinish = { [weak self] in
@@ -198,7 +197,6 @@ final class TunerViewModel: ObservableObject {
             if announceEntry {
                 speak(entryAnnouncement)
             }
-            startedAtLeastOnce = true
         } catch {
             isListening = false
             errorMessage = error.localizedDescription
@@ -364,7 +362,6 @@ final class TunerViewModel: ObservableObject {
     private func resetDetectionState() {
         resetPluck()
         lastSoundAt = nil
-        startedAtLeastOnce = false
     }
 }
 
