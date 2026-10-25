@@ -18,6 +18,41 @@ enum AutoUpdateFeedbackMode: String, CaseIterable, Identifiable, Hashable {
     }
 }
 
+enum NoteNamingStyle: String, CaseIterable, Identifiable, Hashable {
+    case letter
+    case solfege
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .letter: return "字母音名 C4"
+        case .solfege: return "固定唱名 do4"
+        }
+    }
+}
+
+enum NoteNamingFormatter {
+    private static let solfegeNames = [
+        "do", "do#", "re", "re#", "mi", "fa",
+        "fa#", "sol", "sol#", "la", "la#", "si"
+    ]
+
+    static func noteName(midi: Int, style: NoteNamingStyle) -> String {
+        let note = Note(midi: midi)
+        switch style {
+        case .letter:
+            return note.displayName
+        case .solfege:
+            return "\(solfegeNames[note.pitchClass])\(note.octave)"
+        }
+    }
+
+    static func stringDisplayName(_ string: TuningString, style: NoteNamingStyle) -> String {
+        "\(string.numberLabel)，\(noteName(midi: string.midi, style: style))"
+    }
+}
+
 enum ReferenceToneTimbre: String, CaseIterable, Identifiable, Hashable {
     case sine
     case piano
@@ -72,6 +107,10 @@ final class AppModel: ObservableObject {
         didSet { save() }
     }
 
+    @Published var noteNamingStyle: NoteNamingStyle {
+        didSet { save() }
+    }
+
     @Published var referenceToneTimbre: ReferenceToneTimbre {
         didSet { save() }
     }
@@ -96,6 +135,9 @@ final class AppModel: ObservableObject {
         self.autoUpdateFeedbackMode = AutoUpdateFeedbackMode(
             rawValue: defaults.string(forKey: Keys.autoUpdateFeedbackMode) ?? ""
         ) ?? .numberAndHaptics
+        self.noteNamingStyle = NoteNamingStyle(
+            rawValue: defaults.string(forKey: Keys.noteNamingStyle) ?? ""
+        ) ?? .letter
         self.referenceToneTimbre = ReferenceToneTimbre(
             rawValue: defaults.string(forKey: Keys.referenceToneTimbre) ?? ""
         ) ?? .sine
@@ -111,6 +153,19 @@ final class AppModel: ObservableObject {
     var selectedString: TuningString? {
         guard let selectedStringID else { return nil }
         return selectedPreset.strings.first { $0.id == selectedStringID }
+    }
+
+    var selectedTargetDisplayName: String? {
+        guard let target = selectedTargetString else { return nil }
+        return NoteNamingFormatter.stringDisplayName(target, style: noteNamingStyle)
+    }
+
+    func displayName(for string: TuningString) -> String {
+        NoteNamingFormatter.stringDisplayName(string, style: noteNamingStyle)
+    }
+
+    func displayName(forMIDI midi: Int) -> String {
+        NoteNamingFormatter.noteName(midi: midi, style: noteNamingStyle)
     }
 
     var selectedTargetString: TuningString? {
@@ -140,6 +195,7 @@ final class AppModel: ObservableObject {
         defaults.set(concertA, forKey: Keys.concertA)
         defaults.set(toleranceCents, forKey: Keys.toleranceCents)
         defaults.set(autoUpdateFeedbackMode.rawValue, forKey: Keys.autoUpdateFeedbackMode)
+        defaults.set(noteNamingStyle.rawValue, forKey: Keys.noteNamingStyle)
         defaults.set(referenceToneTimbre.rawValue, forKey: Keys.referenceToneTimbre)
         defaults.set(language.rawValue, forKey: Keys.language)
     }
@@ -151,6 +207,7 @@ final class AppModel: ObservableObject {
         static let concertA = "concertA"
         static let toleranceCents = "toleranceCents"
         static let autoUpdateFeedbackMode = "autoUpdateFeedbackMode"
+        static let noteNamingStyle = "noteNamingStyle"
         static let referenceToneTimbre = "referenceToneTimbre"
         static let language = "language"
     }

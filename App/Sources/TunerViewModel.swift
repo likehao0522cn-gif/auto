@@ -41,6 +41,8 @@ final class TunerViewModel: ObservableObject {
     private var concertA: Double = 440
     private var toleranceCents: Double = 3
     private var feedbackMode: AutoUpdateFeedbackMode = .numberAndHaptics
+    private var namingStyle: NoteNamingStyle = .letter
+    private var referenceTimbre: ReferenceToneTimbre = .sine
 
     private var previousRMS: Double = 0
     private var lastSoundAt: Date?
@@ -70,6 +72,8 @@ final class TunerViewModel: ObservableObject {
         concertA: Double,
         toleranceCents: Double,
         feedbackMode: AutoUpdateFeedbackMode,
+        namingStyle: NoteNamingStyle,
+        referenceTimbre: ReferenceToneTimbre,
         announceEntry: Bool
     ) {
         audioEngine.stop()
@@ -81,6 +85,8 @@ final class TunerViewModel: ObservableObject {
         self.concertA = concertA
         self.toleranceCents = toleranceCents
         self.feedbackMode = feedbackMode
+        self.namingStyle = namingStyle
+        self.referenceTimbre = referenceTimbre
         resetDetectionState()
         reading = nil
         liveReading = nil
@@ -116,6 +122,14 @@ final class TunerViewModel: ObservableObject {
         speak("已暂停聆听")
     }
 
+    func pauseForOverlay() {
+        guard isListening else { return }
+        audioEngine.stop()
+        isListening = false
+        isPaused = true
+        statusText = "已暂停聆听"
+    }
+
     func resume() {
         guard isPaused else { return }
         isPaused = false
@@ -141,7 +155,7 @@ final class TunerViewModel: ObservableObject {
         isSpeechActive = true
         statusText = "正在播放参考音"
         do {
-            try audioEngine.playReferenceTone(frequency: frequency) { [weak self] in
+            try audioEngine.playReferenceTone(frequency: frequency, timbre: referenceTimbre) { [weak self] in
                 guard let self else { return }
                 self.isSpeechActive = false
                 self.statusText = "继续聆听"
@@ -193,7 +207,9 @@ final class TunerViewModel: ObservableObject {
     }
 
     private var entryAnnouncement: String {
-        let target = targetString?.displayName ?? mode.title
+        let target = targetString.map {
+            NoteNamingFormatter.stringDisplayName($0, style: namingStyle)
+        } ?? mode.title
         return "调音器，\(preset.displayName)，\(target)，正在聆听"
     }
 
@@ -275,7 +291,7 @@ final class TunerViewModel: ObservableObject {
         }
 
         return TuningReading(
-            noteName: targetNote.displayName,
+            noteName: NoteNamingFormatter.noteName(midi: targetNote.midi, style: namingStyle),
             targetMIDI: targetNote.midi,
             cents: cents,
             frequency: frequency,

@@ -73,6 +73,15 @@ struct TuningSettingsView: View {
                 .pickerStyle(.segmented)
             }
 
+            Section("音名读法") {
+                Picker("音名读法", selection: $appModel.noteNamingStyle) {
+                    ForEach(NoteNamingStyle.allCases) { style in
+                        Text(style.title).tag(style)
+                    }
+                }
+                .pickerStyle(.inline)
+            }
+
             Section("自动更新反馈") {
                 Picker("自动更新反馈", selection: $appModel.autoUpdateFeedbackMode) {
                     ForEach(AutoUpdateFeedbackMode.allCases) { mode in

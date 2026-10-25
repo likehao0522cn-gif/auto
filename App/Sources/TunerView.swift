@@ -8,6 +8,7 @@ struct TunerView: View {
     @State private var mode: DetectionMode = .locked
     @State private var hasAppeared = false
     @State private var restartTask: Task<Void, Never>?
+    @State private var isShowingHelp = false
 
     var body: some View {
         ScrollView {
@@ -36,7 +37,7 @@ struct TunerView: View {
                         } label: {
                             selectorRow(
                                 title: "弦位",
-                                value: appModel.selectedTargetString?.displayName ?? "未选择"
+                                value: appModel.selectedTargetDisplayName ?? "未选择"
                             )
                         }
                     } else if appModel.selectedPreset.isPiano {
@@ -46,7 +47,7 @@ struct TunerView: View {
                         } label: {
                             selectorRow(
                                 title: "目标音",
-                                value: appModel.selectedTargetString?.displayName ?? "自动识别"
+                                value: appModel.selectedTargetDisplayName ?? "自动识别"
                             )
                         }
                     }
@@ -104,8 +105,30 @@ struct TunerView: View {
         .onChange(of: appModel.autoUpdateFeedbackMode) { _, _ in
             scheduleRestart(announceEntry: false)
         }
+        .onChange(of: appModel.noteNamingStyle) { _, _ in
+            scheduleRestart(announceEntry: false)
+        }
+        .onChange(of: appModel.referenceToneTimbre) { _, _ in
+            scheduleRestart(announceEntry: false)
+        }
         .onChange(of: mode) { _, _ in
             scheduleRestart(announceEntry: false)
+        }
+        .sheet(isPresented: $isShowingHelp, onDismiss: {
+            guard hasAppeared, viewModel.isPaused else { return }
+            viewModel.resume()
+        }) {
+            NavigationStack {
+                HelpView()
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("关闭") {
+                                isShowingHelp = false
+                            }
+                            .accessibilityHint("关闭帮助并继续调音")
+                        }
+                    }
+            }
         }
     }
 
@@ -180,13 +203,15 @@ struct TunerView: View {
             .buttonStyle(.borderedProminent)
             .accessibilityHint(viewModel.isPaused ? "重新开始麦克风监听" : "释放麦克风并停止检测")
 
-            NavigationLink {
-                HelpView()
+            Button {
+                viewModel.pauseForOverlay()
+                isShowingHelp = true
             } label: {
                 Label("帮助", systemImage: "questionmark.circle")
                     .frame(maxWidth: .infinity, minHeight: 44)
             }
             .buttonStyle(.bordered)
+            .accessibilityHint("打开帮助时暂停聆听，返回后自动恢复")
         }
     }
 
@@ -228,6 +253,8 @@ struct TunerView: View {
             concertA: appModel.concertA,
             toleranceCents: appModel.toleranceCents,
             feedbackMode: appModel.autoUpdateFeedbackMode,
+            namingStyle: appModel.noteNamingStyle,
+            referenceTimbre: appModel.referenceToneTimbre,
             announceEntry: announceEntry
         )
     }
