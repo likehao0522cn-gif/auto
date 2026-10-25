@@ -27,7 +27,7 @@ public struct PitchDetector: Sendable {
         minFrequency: Double = 27.5,
         maxFrequency: Double = 4200,
         threshold: Double = 0.12,
-        sampleStep: Int = 4
+        sampleStep: Int = 8
     ) {
         self.minFrequency = minFrequency
         self.maxFrequency = maxFrequency
