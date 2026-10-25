@@ -99,6 +99,7 @@ final class TunerAudioEngine {
 
     func playReferenceTone(
         frequency: Double,
+        timbre: ReferenceToneTimbre,
         duration: Double = 2.0,
         onFinish: @escaping () -> Void
     ) throws {
@@ -119,8 +120,21 @@ final class TunerAudioEngine {
             let fadeIn = min(1, time * 40)
             let fadeOut = min(1, (duration - time) * 20)
             let envelope = max(0, min(fadeIn, fadeOut))
-            let sample = sin(2 * Double.pi * frequency * time) * envelope * 0.22
-            channel[frame] = Float(sample)
+            let sample: Double
+
+            switch timbre {
+            case .sine:
+                sample = sin(2 * Double.pi * frequency * time)
+            case .piano:
+                let decay = exp(-time * 1.4)
+                sample = (
+                    sin(2 * Double.pi * frequency * time) * 0.72
+                    + sin(2 * Double.pi * frequency * 2 * time) * 0.18
+                    + sin(2 * Double.pi * frequency * 3 * time) * 0.07
+                ) * decay
+            }
+
+            channel[frame] = Float(sample * envelope * 0.22)
         }
 
         tonePlayer.stop()

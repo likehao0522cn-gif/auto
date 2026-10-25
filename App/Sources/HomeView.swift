@@ -71,9 +71,9 @@ struct HomeView: View {
             }
 
             Section("当前乐器") {
-                Text("\(appModel.selectedPreset.displayName)\(appModel.selectedTargetString.map { "，" + $0.displayName } ?? "")")
+                Text("\(appModel.selectedPreset.displayName)\(appModel.selectedTargetDisplayName.map { "，" + $0 } ?? "")")
                     .accessibilityLabel("当前乐器")
-                    .accessibilityValue("\(appModel.selectedPreset.displayName)\(appModel.selectedTargetString.map { "，" + $0.displayName } ?? "")")
+                    .accessibilityValue("\(appModel.selectedPreset.displayName)\(appModel.selectedTargetDisplayName.map { "，" + $0 } ?? "")")
             }
         }
         .navigationTitle("调音节拍器")

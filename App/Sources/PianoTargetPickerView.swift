@@ -29,15 +29,15 @@ struct PianoTargetPickerView: View {
 
                 Picker("音名", selection: $noteIndex) {
                     ForEach(availableNoteIndices, id: \.self) { index in
-                        Text(Note(midi: (octave + 1) * 12 + index).name).tag(index)
+                        Text(appModel.displayName(forMIDI: (octave + 1) * 12 + index)).tag(index)
                     }
                 }
             }
 
             Section {
-                Text("当前目标：\(Note(midi: selectedMIDI).displayName)")
+                Text("当前目标：\(appModel.displayName(forMIDI: selectedMIDI))")
                     .accessibilityLabel("当前目标")
-                    .accessibilityValue(Note(midi: selectedMIDI).displayName)
+                    .accessibilityValue(appModel.displayName(forMIDI: selectedMIDI))
 
                 Button("应用目标音") {
                     appModel.pianoTargetMIDI = selectedMIDI

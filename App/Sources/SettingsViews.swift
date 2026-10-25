@@ -73,6 +73,15 @@ struct TuningSettingsView: View {
                 .pickerStyle(.segmented)
             }
 
+            Section("音名读法") {
+                Picker("音名读法", selection: $appModel.noteNamingStyle) {
+                    ForEach(NoteNamingStyle.allCases) { style in
+                        Text(style.title).tag(style)
+                    }
+                }
+                .pickerStyle(.inline)
+            }
+
             Section("自动更新反馈") {
                 Picker("自动更新反馈", selection: $appModel.autoUpdateFeedbackMode) {
                     ForEach(AutoUpdateFeedbackMode.allCases) { mode in
@@ -174,9 +183,10 @@ struct OtherSettingsView: View {
             }
 
             Section("恢复默认") {
-                Text("恢复默认设置功能将在后续版本接入。")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                Button("恢复默认设置", role: .destructive) {
+                    appModel.restoreDefaults()
+                }
+                .accessibilityHint("把调音、声音和节拍器设置恢复为初始值")
             }
         }
         .navigationTitle("其他设置")
