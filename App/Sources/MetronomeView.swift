@@ -51,6 +51,13 @@ struct MetronomeView: View {
 
             Section("节拍设置") {
                 NavigationLink {
+                    MetronomeSoundSettingsView()
+                } label: {
+                    Label("音色和触觉", systemImage: "waveform")
+                        .accessibilityFocused($focusedSection, equals: .soundSettings)
+                }
+
+                NavigationLink {
                     BeatSettingsView()
                 } label: {
                     Label("拍号、重音和细分拍", systemImage: "music.note.list")
@@ -94,6 +101,7 @@ struct MetronomeView: View {
         .accessibilityRotor("节拍器快速导航") {
             AccessibilityRotorEntry("播放状态和速度", id: MetronomeAccessibilityFocus.status)
             AccessibilityRotorEntry("开始或停止", id: MetronomeAccessibilityFocus.playback)
+            AccessibilityRotorEntry("音色和触觉", id: MetronomeAccessibilityFocus.soundSettings)
             AccessibilityRotorEntry("节拍设置", id: MetronomeAccessibilityFocus.beatSettings)
             AccessibilityRotorEntry("测速", id: MetronomeAccessibilityFocus.tapTempo)
             AccessibilityRotorEntry("预备拍", id: MetronomeAccessibilityFocus.countIn)
@@ -107,6 +115,7 @@ struct MetronomeView: View {
 
 private enum MetronomeAccessibilityFocus: Hashable {
     case status
+    case soundSettings
     case playback
     case beatSettings
     case tapTempo

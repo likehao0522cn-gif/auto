@@ -133,12 +133,16 @@ struct MetronomeSettingsView: View {
                 LabeledContent("重音", value: metronome.configuration.accentMode.title)
                 LabeledContent("细分拍", value: metronome.configuration.subdivision.title)
                 LabeledContent("预备拍", value: metronome.configuration.countInBars.title)
+                LabeledContent("音色", value: metronome.timbre.title)
+                LabeledContent("触觉", value: metronome.hapticsEnabled ? "开启" : "关闭")
             }
 
             Section {
-                Text("节拍器音色和触觉设置将在后续版本继续完善。")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                NavigationLink {
+                    MetronomeSoundSettingsView()
+                } label: {
+                    Label("音色和触觉", systemImage: "waveform")
+                }
             }
         }
         .navigationTitle("节拍器设置")
@@ -186,7 +190,7 @@ struct OtherSettingsView: View {
                 Button("恢复默认设置", role: .destructive) {
                     appModel.restoreDefaults()
                 }
-                .accessibilityHint("把调音、声音和节拍器设置恢复为初始值")
+                .accessibilityHint("把调音和声音设置恢复为初始值")
             }
         }
         .navigationTitle("其他设置")

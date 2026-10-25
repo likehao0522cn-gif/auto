@@ -41,7 +41,7 @@ final class MetronomeTimingTests: XCTestCase {
         let clicks = MetronomePattern.clicks(for: config)
         XCTAssertEqual(clicks.count, 8)
         XCTAssertEqual(clicks.filter(\.isAccent).count, 1)
-        XCTAssertEqual(clicks.first?.isAccent, true)
+        XCTAssertTrue(clicks.first?.isAccent ?? false)
     }
 
     func testEveryBeatAccent() {
@@ -70,6 +70,39 @@ final class MetronomeTimingTests: XCTestCase {
         estimator.record(at: 0.1)
         estimator.record(at: 0.2)
         XCTAssertGreaterThan(estimator.bpm ?? 0, 300)
+    }
+
+
+    func testCountInOffProducesNoClicks() {
+        let config = MetronomeConfiguration(countInBars: .off)
+        XCTAssertTrue(MetronomePattern.countInClicks(for: config).isEmpty)
+    }
+
+    func testCountInClicksForOneBar() {
+        let config = MetronomeConfiguration(
+            bpm: 120,
+            timeSignature: TimeSignature(numerator: 4, denominator: 4),
+            accentMode: .firstBeat,
+            subdivision: .none,
+            countInBars: .one
+        )
+        let clicks = MetronomePattern.countInClicks(for: config)
+        XCTAssertEqual(clicks.count, 4)
+        XCTAssertEqual(clicks.first?.time ?? -1, 0, accuracy: 0.0001)
+        XCTAssertEqual(clicks.last?.time ?? -1, 1.5, accuracy: 0.0001)
+    }
+
+    func testCountInClicksForTwoBars() {
+        let config = MetronomeConfiguration(
+            bpm: 100,
+            timeSignature: TimeSignature(numerator: 3, denominator: 4),
+            accentMode: .firstBeat,
+            subdivision: .none,
+            countInBars: .two
+        )
+        let clicks = MetronomePattern.countInClicks(for: config)
+        XCTAssertEqual(clicks.count, 6)
+        XCTAssertEqual(clicks.filter(\.isAccent).count, 2)
     }
 
     func testTripletSubdivisionProducesTwelveClicksInFourFour() {
