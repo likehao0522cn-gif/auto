@@ -1,6 +1,6 @@
 # Implementation Status
 
-Updated: 2026-10-24
+Updated: 2026-10-25
 
 ## Implemented
 
@@ -17,17 +17,21 @@ Updated: 2026-10-24
 - Tap tempo area and BPM estimation
 - Settings and help screens
 - Initial VoiceOver labels and focus ordering
+- Note naming setting (letter names or fixed solfege) applied to UI and speech
+- Reference tone timbre setting applied to playback
+- Help overlay pauses tuning and resumes on dismiss
+- Restore-defaults action
 - Core unit tests
 - GitHub Actions macOS build and test workflow
 - XcodeGen project configuration
 
 ## Verified
 
-- 2026-10-24: GitHub Actions `iOS CI` completed successfully.
-- SwiftPM core tests: 26 passed, 0 failures.
-- Xcode iOS Simulator build and test: 26 passed, 0 failures.
-- Run: https://github.com/likehao0522cn-gif/auto/actions/runs/40051338829
-- Unit test coverage: note and cent conversion, instrument presets, pitch detection, metronome timing, and tap tempo.
+- 2026-10-25: GitHub Actions `iOS CI` completed successfully with the latest UI and settings changes.
+- Run: https://github.com/likehao0522cn-gif/auto/actions/runs/40156785385
+- Latest unsigned IPA was produced and downloaded locally to `artifacts/TuneMetronome-unsigned.ipa`.
+- SwiftPM and Xcode Simulator tests pass.
+- Unit test coverage: note and cent conversion, A4 calibration, instrument presets, pitch detection (low, mid, high, noise, performance), metronome timing, subdivisions, and tap tempo.
 
 ## Not Yet Complete or Verified
 
@@ -39,7 +43,6 @@ Updated: 2026-10-24
 - Piano bass accuracy and real instrument timbres are not verified.
 - Guzheng and pipa string data still need final review.
 - Full Chinese and English localization is not implemented.
-- Fixed solfege display is not wired into the UI.
 - Metronome timbre selection is not implemented.
 - App icon, final product name, and App Store configuration are not complete.
 
