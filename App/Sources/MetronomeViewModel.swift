@@ -119,6 +119,13 @@ final class MetronomeViewModel: ObservableObject {
         configuration.bpm = min(300, max(20, bpm.rounded()))
     }
 
+    func resetDefaults() {
+        stop()
+        configuration = MetronomeConfiguration()
+        timbre = .crisp
+        hapticsEnabled = true
+    }
+
     func tickHaptic(isAccent: Bool) {
         guard hapticsEnabled else { return }
         let generator = UIImpactFeedbackGenerator(style: isAccent ? .heavy : .light)

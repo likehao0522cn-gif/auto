@@ -143,6 +143,11 @@ struct MetronomeSettingsView: View {
                 } label: {
                     Label("音色和触觉", systemImage: "waveform")
                 }
+
+                Button("恢复节拍器默认设置", role: .destructive) {
+                    metronome.resetDefaults()
+                }
+                .accessibilityHint("恢复 120 BPM、4/4、第一拍重音和清脆点击音")
             }
         }
         .navigationTitle("节拍器设置")
