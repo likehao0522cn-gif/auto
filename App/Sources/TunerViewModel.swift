@@ -31,6 +31,7 @@ final class TunerViewModel: ObservableObject {
     @Published private(set) var isListening: Bool = false
     @Published private(set) var isPaused: Bool = false
     @Published private(set) var errorMessage: String?
+    @Published private(set) var needsMicrophonePermission = false
 
     private let audioEngine = TunerAudioEngine()
     private let speech = SpeechFeedback()
@@ -90,12 +91,14 @@ final class TunerViewModel: ObservableObject {
         reading = nil
         liveReading = nil
         errorMessage = nil
+        needsMicrophonePermission = false
         statusText = "准备聆听"
 
         requestPermissionIfNeeded { [weak self] granted in
             guard let self else { return }
             guard granted else {
                 self.errorMessage = "麦克风权限未开启。请在系统设置中允许调音节拍器使用麦克风。"
+                self.needsMicrophonePermission = true
                 self.statusText = "需要麦克风权限"
                 self.isListening = false
                 return
@@ -193,6 +196,7 @@ final class TunerViewModel: ObservableObject {
             isListening = true
             isPaused = false
             errorMessage = nil
+            needsMicrophonePermission = false
             statusText = "正在聆听"
             if announceEntry {
                 speak(entryAnnouncement)
