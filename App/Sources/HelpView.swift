@@ -64,3 +64,24 @@ struct HelpArticleView: View {
         .accessibilityValue(topic.body)
     }
 }
+
+struct MetronomeHelpView: View {
+    @EnvironmentObject private var metronome: MetronomeViewModel
+
+    var body: some View {
+        List {
+            Section("播放状态") {
+                Text(metronome.isPlaying ? "节拍器仍在播放。" : "节拍器当前已停止。")
+                    .accessibilityLabel("播放状态")
+                    .accessibilityValue(metronome.isPlaying ? "正在播放" : "已停止")
+            }
+
+            Section {
+                NavigationLink("打开完整帮助") {
+                    HelpView()
+                }
+            }
+        }
+        .navigationTitle("节拍器帮助")
+    }
+}

@@ -84,7 +84,9 @@ struct TunerView: View {
         }
         .onDisappear {
             restartTask?.cancel()
-            viewModel.stop()
+            if !isShowingHelp {
+                viewModel.stop()
+            }
         }
         .onChange(of: appModel.selectedPresetID) { _, _ in
             mode = appModel.selectedPreset.defaultMode

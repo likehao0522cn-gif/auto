@@ -68,7 +68,7 @@ struct MetronomeView: View {
 
             Section {
                 NavigationLink {
-                    HelpView()
+                    MetronomeHelpView()
                 } label: {
                     Label("帮助", systemImage: "questionmark.circle")
                 }

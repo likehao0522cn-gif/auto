@@ -188,6 +188,18 @@ final class AppModel: ObservableObject {
         selectedStringID = string.id
     }
 
+    func restoreDefaults() {
+        selectedPresetID = PresetCatalog.guitar.id
+        selectedStringID = PresetCatalog.guitar.strings.first?.id
+        pianoTargetMIDI = 69
+        concertA = 440
+        toleranceCents = 3
+        autoUpdateFeedbackMode = .numberAndHaptics
+        noteNamingStyle = .letter
+        referenceToneTimbre = .sine
+        language = .simplifiedChinese
+    }
+
     private func save() {
         defaults.set(selectedPresetID, forKey: Keys.presetID)
         defaults.set(selectedStringID, forKey: Keys.stringID)
