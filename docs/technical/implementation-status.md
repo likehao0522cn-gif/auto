@@ -23,15 +23,16 @@ Updated: 2026-10-25
 - Note naming setting (letter names or fixed solfege) applied to UI and speech
 - Reference tone timbre setting applied to playback
 - Help overlay pauses tuning and resumes on dismiss
-- Restore-defaults action
+- Restore-defaults actions for tuning and metronome
+- In-app diagnostics page with device, permission, audio route, and settings summary
 - Core unit tests
 - GitHub Actions macOS build and test workflow
 - XcodeGen project configuration
 
 ## Verified
 
-- 2026-10-25: GitHub Actions `iOS CI` completed successfully with the latest metronome timbre, haptics, and count-in changes.
-- Run: https://github.com/likehao0522cn-gif/auto/actions/runs/40162443723
+- 2026-10-25: GitHub Actions `iOS CI` completed successfully with diagnostics, metronome timbres, haptics, and stable realtime pitch analysis.
+- Run: https://github.com/likehao0522cn-gif/auto/actions/runs/40163213296
 - Latest unsigned IPA was produced and downloaded locally to `artifacts/TuneMetronome-unsigned.ipa`.
 - SwiftPM and Xcode Simulator tests pass.
 - Unit test coverage: note and cent conversion, A4 calibration, instrument presets, pitch detection (low, mid, high, noise, performance), metronome timing, subdivisions, and tap tempo.
