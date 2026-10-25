@@ -41,6 +41,12 @@ struct SettingsView: View {
                 } label: {
                     Label("语言、隐私和恢复默认", systemImage: "info.circle")
                 }
+
+                NavigationLink {
+                    DiagnosticsView()
+                } label: {
+                    Label("诊断", systemImage: "stethoscope")
+                }
             }
         }
         .navigationTitle("设置")
