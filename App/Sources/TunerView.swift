@@ -1,5 +1,6 @@
 import SwiftUI
 import TuneCore
+import UIKit
 
 struct TunerView: View {
     @EnvironmentObject private var appModel: AppModel
@@ -9,11 +10,13 @@ struct TunerView: View {
     @State private var hasAppeared = false
     @State private var restartTask: Task<Void, Never>?
     @State private var isShowingHelp = false
+    @AccessibilityFocusState private var focusedSection: TunerAccessibilityFocus?
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 resultCard
+                    .accessibilityFocused($focusedSection, equals: .result)
 
                 Picker("检测模式", selection: $mode) {
                     ForEach(DetectionMode.allCases) { mode in
@@ -22,12 +25,14 @@ struct TunerView: View {
                 }
                 .pickerStyle(.segmented)
                 .accessibilityLabel("检测模式")
+                .accessibilityFocused($focusedSection, equals: .mode)
 
                 VStack(spacing: 0) {
                     NavigationLink {
                         InstrumentPickerView()
                     } label: {
                         selectorRow(title: "乐器", value: appModel.selectedPreset.displayName)
+                            .accessibilityFocused($focusedSection, equals: .instrument)
                     }
 
                     if !appModel.selectedPreset.strings.isEmpty {
@@ -39,6 +44,7 @@ struct TunerView: View {
                                 title: "弦位",
                                 value: appModel.selectedTargetDisplayName ?? "未选择"
                             )
+                            .accessibilityFocused($focusedSection, equals: .target)
                         }
                     } else if appModel.selectedPreset.isPiano {
                         Divider()
@@ -49,6 +55,7 @@ struct TunerView: View {
                                 title: "目标音",
                                 value: appModel.selectedTargetDisplayName ?? "自动识别"
                             )
+                            .accessibilityFocused($focusedSection, equals: .target)
                         }
                     }
                 }
@@ -62,6 +69,17 @@ struct TunerView: View {
                         .foregroundStyle(.red)
                         .accessibilityLabel("错误")
                         .accessibilityValue(errorMessage)
+
+                    if viewModel.needsMicrophonePermission {
+                        Button {
+                            openSystemSettings()
+                        } label: {
+                            Label("打开系统设置", systemImage: "gearshape")
+                                .frame(maxWidth: .infinity, minHeight: 44)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .accessibilityHint("打开系统设置，允许麦克风访问")
+                    }
                 }
 
                 Text(viewModel.isListening ? "麦克风正在持续监听" : "麦克风未在监听")
@@ -73,6 +91,16 @@ struct TunerView: View {
             .padding()
         }
         .navigationTitle("调音器")
+        .accessibilityRotor("调音器快速导航") {
+            AccessibilityRotorEntry("当前结果", id: TunerAccessibilityFocus.result)
+            AccessibilityRotorEntry("检测模式", id: TunerAccessibilityFocus.mode)
+            AccessibilityRotorEntry("乐器", id: TunerAccessibilityFocus.instrument)
+            AccessibilityRotorEntry("弦位或目标音", id: TunerAccessibilityFocus.target)
+            AccessibilityRotorEntry("参考音", id: TunerAccessibilityFocus.reference)
+            AccessibilityRotorEntry("查询结果", id: TunerAccessibilityFocus.query)
+            AccessibilityRotorEntry("暂停或继续聆听", id: TunerAccessibilityFocus.listening)
+            AccessibilityRotorEntry("帮助", id: TunerAccessibilityFocus.help)
+        }
         .onAppear {
             restartTask?.cancel()
             hasAppeared = true
@@ -180,6 +208,7 @@ struct TunerView: View {
             }
             .buttonStyle(.bordered)
             .accessibilityHint("播放当前目标音，播放期间暂停音高分析")
+            .accessibilityFocused($focusedSection, equals: .reference)
 
             Button {
                 viewModel.queryResult()
@@ -188,6 +217,7 @@ struct TunerView: View {
                     .frame(maxWidth: .infinity, minHeight: 44)
             }
             .buttonStyle(.bordered)
+            .accessibilityFocused($focusedSection, equals: .query)
 
             Button {
                 if viewModel.isPaused {
@@ -204,6 +234,7 @@ struct TunerView: View {
             }
             .buttonStyle(.borderedProminent)
             .accessibilityHint(viewModel.isPaused ? "重新开始麦克风监听" : "释放麦克风并停止检测")
+            .accessibilityFocused($focusedSection, equals: .listening)
 
             Button {
                 viewModel.pauseForOverlay()
@@ -214,6 +245,7 @@ struct TunerView: View {
             }
             .buttonStyle(.bordered)
             .accessibilityHint("打开帮助时暂停聆听，返回后自动恢复")
+            .accessibilityFocused($focusedSection, equals: .help)
         }
     }
 
@@ -247,6 +279,11 @@ struct TunerView: View {
         }
     }
 
+    private func openSystemSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
+    }
+
     private func startNow(announceEntry: Bool) {
         viewModel.start(
             preset: appModel.selectedPreset,
@@ -262,3 +299,14 @@ struct TunerView: View {
     }
 }
 
+
+private enum TunerAccessibilityFocus: Hashable {
+    case result
+    case mode
+    case instrument
+    case target
+    case reference
+    case query
+    case listening
+    case help
+}

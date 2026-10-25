@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MetronomeView: View {
     @EnvironmentObject private var metronome: MetronomeViewModel
+    @AccessibilityFocusState private var focusedSection: MetronomeAccessibilityFocus?
 
     var body: some View {
         List {
@@ -22,6 +23,7 @@ struct MetronomeView: View {
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel("速度")
                 .accessibilityValue("\(Int(metronome.configuration.bpm)) BPM，\(metronome.statusText)")
+                .accessibilityFocused($focusedSection, equals: .status)
 
                 Stepper(
                     value: $metronome.configuration.bpm,
@@ -44,6 +46,7 @@ struct MetronomeView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .accessibilityHint(metronome.isPlaying ? "停止节拍器" : "开始播放节拍器")
+                .accessibilityFocused($focusedSection, equals: .playback)
             }
 
             Section("节拍设置") {
@@ -51,18 +54,21 @@ struct MetronomeView: View {
                     BeatSettingsView()
                 } label: {
                     Label("拍号、重音和细分拍", systemImage: "music.note.list")
+                        .accessibilityFocused($focusedSection, equals: .beatSettings)
                 }
 
                 NavigationLink {
                     TapTempoView()
                 } label: {
                     Label("测速", systemImage: "hand.tap")
+                        .accessibilityFocused($focusedSection, equals: .tapTempo)
                 }
 
                 NavigationLink {
                     CountInView()
                 } label: {
                     Label("预备拍", systemImage: "hourglass")
+                        .accessibilityFocused($focusedSection, equals: .countIn)
                 }
             }
 
@@ -71,6 +77,7 @@ struct MetronomeView: View {
                     MetronomeHelpView()
                 } label: {
                     Label("帮助", systemImage: "questionmark.circle")
+                        .accessibilityFocused($focusedSection, equals: .help)
                 }
             }
 
@@ -84,8 +91,25 @@ struct MetronomeView: View {
             }
         }
         .navigationTitle("节拍器")
+        .accessibilityRotor("节拍器快速导航") {
+            AccessibilityRotorEntry("播放状态和速度", id: MetronomeAccessibilityFocus.status)
+            AccessibilityRotorEntry("开始或停止", id: MetronomeAccessibilityFocus.playback)
+            AccessibilityRotorEntry("节拍设置", id: MetronomeAccessibilityFocus.beatSettings)
+            AccessibilityRotorEntry("测速", id: MetronomeAccessibilityFocus.tapTempo)
+            AccessibilityRotorEntry("预备拍", id: MetronomeAccessibilityFocus.countIn)
+            AccessibilityRotorEntry("帮助", id: MetronomeAccessibilityFocus.help)
+        }
         .accessibilityAction(named: "开始或停止") {
             metronome.toggle()
         }
     }
+}
+
+private enum MetronomeAccessibilityFocus: Hashable {
+    case status
+    case playback
+    case beatSettings
+    case tapTempo
+    case countIn
+    case help
 }
