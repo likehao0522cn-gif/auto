@@ -2,14 +2,33 @@ import AVFoundation
 import Combine
 import Foundation
 import TuneCore
+import UIKit
 
 @MainActor
 final class MetronomeViewModel: ObservableObject {
     @Published var configuration: MetronomeConfiguration {
         didSet {
             saveConfiguration()
-            guard isPlaying else { return }
-            restart()
+            if isPlaying { restart() }
+        }
+    }
+
+    @Published var timbre: MetronomeTimbre {
+        didSet {
+            saveConfiguration()
+            if isPlaying { restart() }
+        }
+    }
+
+    @Published var hapticsEnabled: Bool {
+        didSet {
+            saveConfiguration()
+            if hapticsEnabled, isPlaying {
+                startHapticLoop(after: 0)
+            } else if !hapticsEnabled {
+                hapticTask?.cancel()
+                hapticTask = nil
+            }
         }
     }
 
@@ -21,6 +40,8 @@ final class MetronomeViewModel: ObservableObject {
     private let speech = SpeechFeedback()
     private let defaults: UserDefaults
     private var interruptionObserver: NSObjectProtocol?
+    private var hapticTask: Task<Void, Never>?
+    private var statusTask: Task<Void, Never>?
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -41,6 +62,10 @@ final class MetronomeViewModel: ObservableObject {
             subdivision: subdivision,
             countInBars: countIn
         )
+        self.timbre = MetronomeTimbre(
+            rawValue: defaults.string(forKey: Keys.timbre) ?? ""
+        ) ?? .crisp
+        self.hapticsEnabled = defaults.object(forKey: Keys.hapticsEnabled) as? Bool ?? true
 
         interruptionObserver = NotificationCenter.default.addObserver(
             forName: AVAudioSession.interruptionNotification,
@@ -54,6 +79,8 @@ final class MetronomeViewModel: ObservableObject {
     }
 
     deinit {
+        hapticTask?.cancel()
+        statusTask?.cancel()
         if let interruptionObserver {
             NotificationCenter.default.removeObserver(interruptionObserver)
         }
@@ -68,20 +95,14 @@ final class MetronomeViewModel: ObservableObject {
     }
 
     func start() {
-        do {
-            try engine.start(configuration: configuration)
-            isPlaying = true
-            errorMessage = nil
-            statusText = "正在播放 \(Int(configuration.bpm)) BPM，\(configuration.timeSignature.id)"
-            speak("节拍器开始")
-        } catch {
-            isPlaying = false
-            errorMessage = error.localizedDescription
-            statusText = "无法开始节拍器"
-        }
+        startEngine()
     }
 
     func stop() {
+        hapticTask?.cancel()
+        hapticTask = nil
+        statusTask?.cancel()
+        statusTask = nil
         engine.stop()
         isPlaying = false
         statusText = "已停止"
@@ -98,15 +119,92 @@ final class MetronomeViewModel: ObservableObject {
         configuration.bpm = min(300, max(20, bpm.rounded()))
     }
 
-    private func restart() {
+    func tickHaptic(isAccent: Bool) {
+        guard hapticsEnabled else { return }
+        let generator = UIImpactFeedbackGenerator(style: isAccent ? .heavy : .light)
+        generator.prepare()
+        generator.impactOccurred()
+    }
+
+    private func startEngine() {
         do {
-            try engine.start(configuration: configuration)
+            try engine.start(configuration: configuration, timbre: timbre)
             isPlaying = true
-            statusText = "正在播放 \(Int(configuration.bpm)) BPM，\(configuration.timeSignature.id)"
+            errorMessage = nil
+            beginPlaybackFeedback()
         } catch {
             isPlaying = false
             errorMessage = error.localizedDescription
             statusText = "无法开始节拍器"
+        }
+    }
+
+    private func restart() {
+        hapticTask?.cancel()
+        hapticTask = nil
+        statusTask?.cancel()
+        statusTask = nil
+        startEngine()
+    }
+
+    private func beginPlaybackFeedback() {
+        let countInDuration = configuration.countInBars.rawValue > 0
+            ? configuration.barDuration * Double(configuration.countInBars.rawValue)
+            : 0
+
+        if configuration.countInBars.rawValue > 0 {
+            statusText = "预备拍，\(configuration.countInBars.title)"
+            speak("预备拍，\(configuration.countInBars.title)")
+            statusTask = Task { @MainActor [weak self] in
+                try? await Task.sleep(for: .seconds(countInDuration))
+                guard !Task.isCancelled, let self, self.isPlaying else { return }
+                self.statusText = self.playingStatusText
+            }
+        } else {
+            statusText = playingStatusText
+            speak("节拍器开始")
+        }
+
+        startHapticLoop(after: countInDuration)
+    }
+
+    private var playingStatusText: String {
+        "正在播放 \(Int(configuration.bpm)) BPM，\(configuration.timeSignature.id)，\(timbre.title)"
+    }
+
+    private func startHapticLoop(after delay: TimeInterval) {
+        hapticTask?.cancel()
+        guard hapticsEnabled else {
+            hapticTask = nil
+            return
+        }
+
+        hapticTask = Task { @MainActor [weak self] in
+            if delay > 0 {
+                try? await Task.sleep(for: .seconds(delay))
+            }
+            guard !Task.isCancelled, let self, self.isPlaying else { return }
+
+            var clickIndex = 0
+            let pattern = MetronomePattern.clicks(for: self.configuration)
+            guard !pattern.isEmpty else { return }
+
+            while !Task.isCancelled {
+                guard self.isPlaying, self.hapticsEnabled else { return }
+                let click = pattern[clickIndex % pattern.count]
+                self.tickHaptic(isAccent: click.isAccent)
+                clickIndex = (clickIndex + 1) % pattern.count
+
+                let nextIndex = clickIndex % pattern.count
+                let interval: TimeInterval
+                if nextIndex == 0 {
+                    interval = self.configuration.barDuration - pattern[pattern.count - 1].time
+                } else {
+                    interval = pattern[nextIndex].time - pattern[nextIndex - 1].time
+                }
+                guard interval > 0 else { return }
+                try? await Task.sleep(for: .seconds(interval))
+            }
         }
     }
 
@@ -119,6 +217,10 @@ final class MetronomeViewModel: ObservableObject {
         switch type {
         case .began:
             guard isPlaying else { return }
+            hapticTask?.cancel()
+            hapticTask = nil
+            statusTask?.cancel()
+            statusTask = nil
             engine.stop()
             isPlaying = false
             statusText = "音频被中断，请重新开始"
@@ -143,6 +245,8 @@ final class MetronomeViewModel: ObservableObject {
         defaults.set(configuration.accentMode.rawValue, forKey: Keys.accent)
         defaults.set(configuration.subdivision.rawValue, forKey: Keys.subdivision)
         defaults.set(configuration.countInBars.rawValue, forKey: Keys.countIn)
+        defaults.set(timbre.rawValue, forKey: Keys.timbre)
+        defaults.set(hapticsEnabled, forKey: Keys.hapticsEnabled)
     }
 
     private enum Keys {
@@ -152,5 +256,7 @@ final class MetronomeViewModel: ObservableObject {
         static let accent = "metronome.accent"
         static let subdivision = "metronome.subdivision"
         static let countIn = "metronome.countIn"
+        static let timbre = "metronome.timbre"
+        static let hapticsEnabled = "metronome.hapticsEnabled"
     }
 }

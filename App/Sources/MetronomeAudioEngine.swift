@@ -9,7 +9,7 @@ final class MetronomeAudioEngine {
     private var isPlaying = false
     private(set) var configuration = MetronomeConfiguration()
 
-    func start(configuration: MetronomeConfiguration) throws {
+    func start(configuration: MetronomeConfiguration, timbre: MetronomeTimbre) throws {
         stop()
         self.configuration = configuration
         try AudioSessionManager.configureForMetronome()
@@ -23,7 +23,8 @@ final class MetronomeAudioEngine {
 
         let barBuffer = try makeBuffer(
             duration: configuration.barDuration,
-            clicks: MetronomePattern.clicks(for: configuration)
+            clicks: MetronomePattern.clicks(for: configuration),
+            timbre: timbre
         )
         engine.prepare()
         try engine.start()
@@ -32,7 +33,8 @@ final class MetronomeAudioEngine {
             let countInDuration = configuration.barDuration * Double(configuration.countInBars.rawValue)
             let countInBuffer = try makeBuffer(
                 duration: countInDuration,
-                clicks: countInClicks(for: configuration)
+                clicks: MetronomePattern.countInClicks(for: configuration),
+                timbre: timbre
             )
             player.scheduleBuffer(
                 countInBuffer,
@@ -61,19 +63,12 @@ final class MetronomeAudioEngine {
         AudioSessionManager.deactivate()
     }
 
-    private func countInClicks(for configuration: MetronomeConfiguration) -> [MetronomeClick] {
-        let clicksPerBar = MetronomePattern.clicks(for: configuration)
-        return (0..<configuration.countInBars.rawValue).flatMap { barIndex in
-            clicksPerBar.map { click in
-                MetronomeClick(
-                    time: click.time + Double(barIndex) * configuration.barDuration,
-                    isAccent: click.isAccent
-                )
-            }
-        }
-    }
 
-    private func makeBuffer(duration: TimeInterval, clicks: [MetronomeClick]) throws -> AVAudioPCMBuffer {
+    private func makeBuffer(
+        duration: TimeInterval,
+        clicks: [MetronomeClick],
+        timbre: MetronomeTimbre
+    ) throws -> AVAudioPCMBuffer {
         guard let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1) else {
             throw MetronomeAudioEngineError.cannotCreateFormat
         }
@@ -95,15 +90,18 @@ final class MetronomeAudioEngine {
         for click in clicks {
             let startFrame = Int((click.time * sampleRate).rounded())
             guard startFrame < Int(totalFrames) else { continue }
-            let frequency = click.isAccent ? 1_760.0 : 1_120.0
+            let frequency = click.isAccent ? timbre.accentFrequency : timbre.beatFrequency
             let amplitude = click.isAccent ? 0.85 : 0.55
 
             for offset in 0..<clickFrames {
                 let frame = startFrame + offset
                 guard frame < Int(totalFrames) else { break }
                 let time = Double(offset) / sampleRate
-                let envelope = exp(-time * 95)
-                let tone = sin(2 * Double.pi * frequency * time)
+                let envelope = exp(-time * timbre.decay)
+                var tone = sin(2 * Double.pi * frequency * time)
+                if timbre.addsOctaveHarmonic {
+                    tone += sin(2 * Double.pi * frequency * 2 * time) * 0.28
+                }
                 let sample = Float(tone * envelope * amplitude)
                 channel[frame] = max(-1, min(1, channel[frame] + sample))
             }

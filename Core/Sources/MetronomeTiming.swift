@@ -123,6 +123,19 @@ public struct MetronomeClick: Equatable, Sendable {
 }
 
 public enum MetronomePattern {
+    public static func countInClicks(for configuration: MetronomeConfiguration) -> [MetronomeClick] {
+        guard configuration.countInBars.rawValue > 0 else { return [] }
+        let barClicks = clicks(for: configuration)
+        return (0..<configuration.countInBars.rawValue).flatMap { barIndex in
+            barClicks.map { click in
+                MetronomeClick(
+                    time: click.time + Double(barIndex) * configuration.barDuration,
+                    isAccent: click.isAccent
+                )
+            }
+        }
+    }
+
     public static func clicks(for configuration: MetronomeConfiguration) -> [MetronomeClick] {
         let beatDuration = configuration.beatDuration
         guard beatDuration > 0 else { return [] }
