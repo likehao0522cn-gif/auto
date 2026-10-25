@@ -13,6 +13,9 @@ Updated: 2026-10-25
 - Reference tone playback
 - Metronome screen
 - Time signature, accent, subdivision, and count-in settings
+- Three metronome timbres
+- Optional haptic ticks that follow the beat pattern
+- Count-in feedback and status
 - AVAudioEngine-based metronome click loop
 - Tap tempo area and BPM estimation
 - Settings and help screens
@@ -27,8 +30,8 @@ Updated: 2026-10-25
 
 ## Verified
 
-- 2026-10-25: GitHub Actions `iOS CI` completed successfully with the latest UI and settings changes.
-- Run: https://github.com/likehao0522cn-gif/auto/actions/runs/40156785385
+- 2026-10-25: GitHub Actions `iOS CI` completed successfully with the latest metronome timbre, haptics, and count-in changes.
+- Run: https://github.com/likehao0522cn-gif/auto/actions/runs/40162443723
 - Latest unsigned IPA was produced and downloaded locally to `artifacts/TuneMetronome-unsigned.ipa`.
 - SwiftPM and Xcode Simulator tests pass.
 - Unit test coverage: note and cent conversion, A4 calibration, instrument presets, pitch detection (low, mid, high, noise, performance), metronome timing, subdivisions, and tap tempo.
@@ -43,7 +46,6 @@ Updated: 2026-10-25
 - Piano bass accuracy and real instrument timbres are not verified.
 - Guzheng and pipa string data still need final review.
 - Full Chinese and English localization is not implemented.
-- Metronome timbre selection is not implemented.
 - App icon, final product name, and App Store configuration are not complete.
 
 ## Next Milestones
