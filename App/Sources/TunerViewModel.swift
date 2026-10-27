@@ -10,16 +10,31 @@ struct TuningReading: Equatable {
     let frequency: Double
     let confidence: Double
     let isInTune: Bool
+    let toleranceCents: Double
+
+    private var feedback: TuningFeedback {
+        TuningFeedback(
+            noteName: noteName,
+            cents: cents,
+            confidence: confidence,
+            toleranceCents: toleranceCents
+        )
+    }
 
     var displayText: String {
-        if isInTune {
-            return "\(noteName)，准"
-        }
-        return "\(noteName)，\(PitchMath.formatCents(cents))"
+        feedback.displayText
     }
 
     var spokenText: String {
-        "\(noteName)，\(PitchMath.formatCents(cents))"
+        feedback.fullSpokenText
+    }
+
+    var shortSpokenText: String {
+        feedback.shortSpokenText
+    }
+
+    func shouldAnnounceFullResult(comparedTo previous: TuningReading?) -> Bool {
+        feedback.shouldAnnounceFullResult(comparedTo: previous?.feedback)
     }
 }
 
@@ -52,6 +67,7 @@ final class TunerViewModel: ObservableObject {
     private var lastAnnouncedCents: Double?
     private var lastUpdateAt: Date?
     private var autoUpdateCount: Int = 0
+    private var lastPresentedReading: TuningReading?
     private var isSpeechActive = false
     private var onSpeechComplete: (() -> Void)?
     private var interruptionObserver: NSObjectProtocol?
@@ -224,9 +240,7 @@ final class TunerViewModel: ObservableObject {
         guard wasActive != isActive else { return }
         isSceneActive = isActive
 
-        if isActive {
-            resumeIfNeeded()
-        } else if isListening {
+        if !isActive, isListening {
             resumeAfterLifecycle = true
             wantsListening = true
             audioEngine.stop()
@@ -235,6 +249,8 @@ final class TunerViewModel: ObservableObject {
             isListening = false
             isPaused = true
             statusText = "已暂停聆听"
+        } else if isActive {
+            resumeIfNeeded()
         }
     }
 
@@ -555,7 +571,8 @@ final class TunerViewModel: ObservableObject {
             cents: cents,
             frequency: frequency,
             confidence: confidence,
-            isInTune: abs(cents) <= toleranceCents
+            isInTune: abs(cents) <= toleranceCents,
+            toleranceCents: toleranceCents
         )
     }
 
@@ -570,14 +587,21 @@ final class TunerViewModel: ObservableObject {
 
         playHaptic(for: reading)
 
-        if initial {
+        let shouldSpeakFullResult = initial
+            || reading.shouldAnnounceFullResult(comparedTo: lastPresentedReading)
+        lastPresentedReading = reading
+
+        if shouldSpeakFullResult {
             speak(reading.spokenText)
         } else if feedbackMode == .numberAndHaptics {
-            speak(PitchMath.formatCents(reading.cents))
+            speak(reading.shortSpokenText)
         } else {
             isSpeechActive = true
             do {
-                try audioEngine.playEarcon(cents: reading.cents) { [weak self] in
+                try audioEngine.playEarcon(
+                    cents: reading.cents,
+                    isInTune: reading.isInTune
+                ) { [weak self] in
                     self?.isSpeechActive = false
                 }
             } catch {
@@ -618,6 +642,7 @@ final class TunerViewModel: ObservableObject {
         lastAnnouncedCents = nil
         lastUpdateAt = nil
         autoUpdateCount = 0
+        lastPresentedReading = nil
     }
 
     private func resetDetectionState() {

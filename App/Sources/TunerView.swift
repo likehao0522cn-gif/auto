@@ -54,7 +54,9 @@ struct TunerView: View {
                         } label: {
                             selectorRow(
                                 title: "目标音",
-                                value: appModel.selectedTargetDisplayName ?? "自动识别"
+                                value: mode == .automatic
+                                    ? "自动识别"
+                                    : (appModel.selectedTargetDisplayName ?? "未选择")
                             )
                             .accessibilityFocused($focusedSection, equals: .target)
                         }
@@ -144,12 +146,10 @@ struct TunerView: View {
         }
         .onChange(of: scenePhase) { _, current in
             switch current {
-            case .background:
+            case .background, .inactive:
                 viewModel.setSceneActive(false)
             case .active:
                 viewModel.pageDidBecomeActive()
-            case .inactive:
-                break
             @unknown default:
                 break
             }

@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct TapTempoView: View {
+    @EnvironmentObject private var appModel: AppModel
     @EnvironmentObject private var metronome: MetronomeViewModel
     @StateObject private var viewModel = TapTempoViewModel()
 
@@ -32,7 +33,7 @@ struct TapTempoView: View {
             .frame(maxWidth: .infinity, minHeight: 260)
             .contentShape(RoundedRectangle(cornerRadius: 24))
             .onTapGesture {
-                viewModel.tap()
+                viewModel.tap(hapticsEnabled: appModel.tapTempoHapticsEnabled)
             }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("测速区域")
@@ -46,7 +47,7 @@ struct TapTempoView: View {
                 .accessibilityValue("\(viewModel.tapCount) 拍")
 
             Button {
-                viewModel.tap()
+                viewModel.tap(hapticsEnabled: appModel.tapTempoHapticsEnabled)
             } label: {
                 Label("记录一拍", systemImage: "plus.circle.fill")
                     .frame(maxWidth: .infinity, minHeight: 48)
@@ -70,6 +71,9 @@ struct TapTempoView: View {
                 viewModel.reset()
             }
             .buttonStyle(.bordered)
+
+            Toggle("拍点触觉反馈", isOn: $appModel.tapTempoHapticsEnabled)
+                .accessibilityHint("关闭后，记录拍点时不产生触觉反馈")
 
             Text("音量键测速会在真机验证后启用。")
                 .font(.footnote)

@@ -119,6 +119,10 @@ final class AppModel: ObservableObject {
         didSet { save() }
     }
 
+    @Published var tapTempoHapticsEnabled: Bool {
+        didSet { save() }
+    }
+
     let presets: [InstrumentPreset] = PresetCatalog.all
 
     private let defaults: UserDefaults
@@ -144,6 +148,7 @@ final class AppModel: ObservableObject {
         self.language = AppLanguage(
             rawValue: defaults.string(forKey: Keys.language) ?? ""
         ) ?? .simplifiedChinese
+        self.tapTempoHapticsEnabled = defaults.object(forKey: Keys.tapTempoHapticsEnabled) as? Bool ?? true
     }
 
     var selectedPreset: InstrumentPreset {
@@ -198,6 +203,7 @@ final class AppModel: ObservableObject {
         noteNamingStyle = .letter
         referenceToneTimbre = .sine
         language = .simplifiedChinese
+        tapTempoHapticsEnabled = true
     }
 
     private func save() {
@@ -210,6 +216,7 @@ final class AppModel: ObservableObject {
         defaults.set(noteNamingStyle.rawValue, forKey: Keys.noteNamingStyle)
         defaults.set(referenceToneTimbre.rawValue, forKey: Keys.referenceToneTimbre)
         defaults.set(language.rawValue, forKey: Keys.language)
+        defaults.set(tapTempoHapticsEnabled, forKey: Keys.tapTempoHapticsEnabled)
     }
 
     private enum Keys {
@@ -222,6 +229,7 @@ final class AppModel: ObservableObject {
         static let noteNamingStyle = "noteNamingStyle"
         static let referenceToneTimbre = "referenceToneTimbre"
         static let language = "language"
+        static let tapTempoHapticsEnabled = "tapTempoHapticsEnabled"
     }
 }
 

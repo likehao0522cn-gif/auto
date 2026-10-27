@@ -149,11 +149,45 @@ final class TunerAudioEngine {
         }
     }
 
-    func playEarcon(cents: Double, onFinish: @escaping () -> Void) throws {
+    func playEarcon(
+        cents: Double,
+        isInTune: Bool,
+        onFinish: @escaping () -> Void
+    ) throws {
         guard isRunning else { throw TunerAudioEngineError.engineNotRunning }
         guard let format = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 1) else {
             throw TunerAudioEngineError.noInputAvailable
         }
+        if isInTune {
+            let confirmationDuration = 0.18
+            let confirmationFrames = AVAudioFrameCount((confirmationDuration * 44_100).rounded())
+            guard let confirmationBuffer = AVAudioPCMBuffer(
+                pcmFormat: format,
+                frameCapacity: confirmationFrames
+            ), let confirmationChannel = confirmationBuffer.floatChannelData?[0] else {
+                throw TunerAudioEngineError.noInputAvailable
+            }
+            confirmationBuffer.frameLength = confirmationFrames
+
+            for frame in 0..<Int(confirmationFrames) {
+                let time = Double(frame) / 44_100
+                let envelope = max(0, min(1, min(time * 60, (confirmationDuration - time) * 60)))
+                let sample = sin(2 * Double.pi * 1_320 * time) * envelope * 0.2
+                confirmationChannel[frame] = Float(sample)
+            }
+
+            tonePlayer.stop()
+            toneGeneration += 1
+            let currentToneGeneration = toneGeneration
+            tonePlayer.scheduleBuffer(confirmationBuffer, at: nil, options: [])
+            tonePlayer.play()
+            DispatchQueue.main.asyncAfter(deadline: .now() + confirmationDuration) {
+                guard self.toneGeneration == currentToneGeneration else { return }
+                onFinish()
+            }
+            return
+        }
+
         let duration = 0.22
         let frameCount = AVAudioFrameCount((duration * 44_100).rounded())
         guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount),

@@ -1,6 +1,6 @@
 # Implementation Status
 
-Updated: 2026-10-25
+Updated: 2026-10-27
 
 ## Implemented
 
@@ -25,6 +25,11 @@ Updated: 2026-10-25
 - Help overlay pauses tuning and resumes on dismiss
 - Restore-defaults actions for tuning and metronome
 - In-app diagnostics page with device, permission, audio route, and settings summary
+- Tuner microphone is released whenever the app leaves the foreground or the tuner page is not visible
+- Tuner recovers from microphone permission changes, audio interruptions, and output route changes
+- In-tune earcon, direction-change full announcements, and low-confidence feedback
+- Piano automatic mode shows "自动识别" instead of a fixed target
+- Tap tempo plays a short confirmation click for each tap
 - Core unit tests
 - GitHub Actions macOS build and test workflow
 - XcodeGen project configuration
@@ -33,20 +38,24 @@ Updated: 2026-10-25
 
 - 2026-10-25: GitHub Actions `iOS CI` completed successfully with diagnostics, metronome timbres, haptics, and stable realtime pitch analysis.
 - Run: https://github.com/likehao0522cn-gif/auto/actions/runs/40163213296
+- 2026-10-27: GitHub Actions `iOS CI` completed successfully after tuner lifecycle and audio recovery changes.
+- Run: https://github.com/likehao0522cn-gif/auto/actions/runs/40492063037
 - Latest unsigned IPA was produced and downloaded locally to `artifacts/TuneMetronome-unsigned.ipa`.
 - SwiftPM and Xcode Simulator tests pass.
-- Unit test coverage: note and cent conversion, A4 calibration, instrument presets, pitch detection (low, mid, high, noise, performance), metronome timing, subdivisions, and tap tempo.
+- Unit test coverage: note and cent conversion, A4 calibration, instrument presets, pitch detection (low, mid, high, noise, performance), metronome timing, subdivisions, tap tempo, and tuning feedback.
 
 ## Not Yet Complete or Verified
 
 - No signed TestFlight build has been produced yet.
 - Volume-button tap tempo is not implemented.
+- Piano multiple-note rejection is not implemented.
+- Metronome haptics are not sample-time synchronized with the audio click.
+- Full Chinese and English localization is not implemented; the language picker currently does not change UI text or speech language.
 - Real VoiceOver speech, overlap, and device focus order are not verified.
 - Haptic feedback is not verified on a physical device.
 - Metronome background playback, lock screen behavior, and audio routing are not verified.
 - Piano bass accuracy and real instrument timbres are not verified.
 - Guzheng and pipa string data still need final review.
-- Full Chinese and English localization is not implemented.
 - App icon, final product name, and App Store configuration are not complete.
 
 ## Next Milestones

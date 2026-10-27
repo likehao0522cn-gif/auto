@@ -197,11 +197,16 @@ struct OtherSettingsView: View {
                 Text("调音节拍器不录音、不上传音频。音高分析在设备本地完成。")
             }
 
+            Section("测速") {
+                Toggle("拍点触觉反馈", isOn: $appModel.tapTempoHapticsEnabled)
+                    .accessibilityHint("关闭后，记录拍点时不产生触觉反馈")
+            }
+
             Section("恢复默认") {
                 Button("恢复默认设置", role: .destructive) {
                     appModel.restoreDefaults()
                 }
-                .accessibilityHint("把调音和声音设置恢复为初始值")
+                .accessibilityHint("把调音和声音设置恢复为初始值，不改变节拍器设置")
             }
         }
         .navigationTitle("其他设置")

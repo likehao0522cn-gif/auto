@@ -29,6 +29,13 @@ struct DiagnosticsView: View {
                 diagnosticRow("参考音音色", value: appModel.referenceToneTimbre.title)
             }
 
+            Section("检测与调度") {
+                diagnosticRow("检测频率", value: "调音器页面实时显示")
+                diagnosticRow("检测置信度", value: "调音器页面实时显示")
+                diagnosticRow("节拍器调度", value: "基于音频采样时间，暂无偏差数据")
+                diagnosticRow("最近错误", value: metronome.errorMessage ?? "无")
+            }
+
             Section("节拍器设置") {
                 diagnosticRow("播放状态", value: metronome.isPlaying ? "正在播放" : "已停止")
                 diagnosticRow("速度", value: "\(Int(metronome.configuration.bpm)) BPM")
@@ -120,6 +127,10 @@ struct DiagnosticsView: View {
         音名读法: \(appModel.noteNamingStyle.title)
         更新反馈: \(appModel.autoUpdateFeedbackMode.title)
         参考音音色: \(appModel.referenceToneTimbre.title)
+        检测频率: 调音器页面实时显示
+        检测置信度: 调音器页面实时显示
+        节拍器调度: 基于音频采样时间，暂无偏差数据
+        最近错误: \(metronome.errorMessage ?? "无")
         节拍器播放状态: \(metronome.isPlaying ? "正在播放" : "已停止")
         节拍器速度: \(Int(metronome.configuration.bpm)) BPM
         拍号: \(metronome.configuration.timeSignature.id)
