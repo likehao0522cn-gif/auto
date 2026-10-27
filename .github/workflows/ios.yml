@@ -43,6 +43,17 @@ jobs:
           set -e
           exit $TEST_EXIT_CODE
 
+      - name: Report test errors
+        if: failure()
+        run: |
+          if [ -f xcodebuild-test.log ]; then
+            grep -n -E 'error:|The following build commands failed' xcodebuild-test.log \
+              | tail -80 \
+              | while IFS= read -r line; do
+                  echo "::error title=xcodebuild::$line"
+                done
+          fi
+
       - name: Upload test log on failure
         if: failure()
         uses: actions/upload-artifact@v4
