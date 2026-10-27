@@ -330,7 +330,7 @@ final class TunerViewModel: ObservableObject {
         switch session.recordPermission {
         case .granted:
             completion(true)
-        case .denied, .restricted:
+        case .denied:
             completion(false)
         case .undetermined:
             guard !isRequestingPermission else { return }
