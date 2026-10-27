@@ -64,8 +64,8 @@ final class TunerAudioEngine {
             self.analysisQueue.async { [weak self] in
                 guard let self else { return }
                 let estimate = self.detector.detect(samples: samples, sampleRate: sampleRate)
-                DispatchQueue.main.async {
-                    guard self.generation == currentGeneration, self.isRunning else { return }
+                DispatchQueue.main.async { [weak self] in
+                    guard let self, self.generation == currentGeneration, self.isRunning else { return }
                     onEstimate(estimate)
                 }
             }
@@ -85,6 +85,7 @@ final class TunerAudioEngine {
     }
 
     func stop() {
+        toneGeneration += 1
         guard isRunning || tapInstalled else { return }
         generation += 1
         if tapInstalled {

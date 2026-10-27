@@ -5,6 +5,7 @@ import UIKit
 struct TunerView: View {
     @EnvironmentObject private var appModel: AppModel
     @EnvironmentObject private var metronome: MetronomeViewModel
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var viewModel = TunerViewModel()
     @State private var mode: DetectionMode = .locked
     @State private var hasAppeared = false
@@ -72,6 +73,15 @@ struct TunerView: View {
 
                     if viewModel.needsMicrophonePermission {
                         Button {
+                            viewModel.retryMicrophonePermission()
+                        } label: {
+                            Label("重新尝试聆听", systemImage: "mic.fill")
+                                .frame(maxWidth: .infinity, minHeight: 44)
+                        }
+                        .buttonStyle(.bordered)
+                        .accessibilityHint("重新检查麦克风权限并开始聆听")
+
+                        Button {
                             openSystemSettings()
                         } label: {
                             Label("打开系统设置", systemImage: "gearshape")
@@ -104,16 +114,44 @@ struct TunerView: View {
         .onAppear {
             restartTask?.cancel()
             hasAppeared = true
+            viewModel.pageWillAppear(sceneIsActive: scenePhase == .active)
             if metronome.isPlaying {
                 metronome.stop()
             }
             mode = appModel.selectedPreset.defaultMode
-            startNow(announceEntry: true)
+            if scenePhase == .active {
+                startNow(announceEntry: true)
+            } else {
+                viewModel.prepareToListenWhenActive(
+                    preset: appModel.selectedPreset,
+                    string: appModel.selectedTargetString,
+                    mode: mode,
+                    concertA: appModel.concertA,
+                    toleranceCents: appModel.toleranceCents,
+                    feedbackMode: appModel.autoUpdateFeedbackMode,
+                    namingStyle: appModel.noteNamingStyle,
+                    referenceTimbre: appModel.referenceToneTimbre
+                )
+            }
         }
         .onDisappear {
             restartTask?.cancel()
-            if !isShowingHelp {
-                viewModel.stop()
+            if isShowingHelp {
+                return
+            }
+            hasAppeared = false
+            viewModel.pageDidDisappear()
+        }
+        .onChange(of: scenePhase) { _, current in
+            switch current {
+            case .background:
+                viewModel.setSceneActive(false)
+            case .active:
+                viewModel.pageDidBecomeActive()
+            case .inactive:
+                break
+            @unknown default:
+                break
             }
         }
         .onChange(of: appModel.selectedPresetID) { _, _ in
@@ -274,7 +312,7 @@ struct TunerView: View {
         restartTask?.cancel()
         restartTask = Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(120))
-            guard !Task.isCancelled, hasAppeared else { return }
+            guard !Task.isCancelled, hasAppeared, scenePhase == .active else { return }
             startNow(announceEntry: announceEntry)
         }
     }

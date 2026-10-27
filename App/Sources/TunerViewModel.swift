@@ -54,6 +54,14 @@ final class TunerViewModel: ObservableObject {
     private var autoUpdateCount: Int = 0
     private var isSpeechActive = false
     private var onSpeechComplete: (() -> Void)?
+    private var interruptionObserver: NSObjectProtocol?
+    private var routeChangeObserver: NSObjectProtocol?
+    private var routeRestartTask: Task<Void, Never>?
+    private var isPageVisible = false
+    private var isSceneActive = true
+    private var resumeAfterLifecycle = false
+    private var wantsListening = false
+    private var isRequestingPermission = false
 
     init() {
         speech.onFinish = { [weak self] in
@@ -62,6 +70,36 @@ final class TunerViewModel: ObservableObject {
             let completion = self.onSpeechComplete
             self.onSpeechComplete = nil
             completion?()
+        }
+
+        interruptionObserver = NotificationCenter.default.addObserver(
+            forName: AVAudioSession.interruptionNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            Task { @MainActor [weak self] in
+                self?.handleInterruption(notification)
+            }
+        }
+
+        routeChangeObserver = NotificationCenter.default.addObserver(
+            forName: AVAudioSession.routeChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            Task { @MainActor [weak self] in
+                self?.handleRouteChange(notification)
+            }
+        }
+    }
+
+    deinit {
+        routeRestartTask?.cancel()
+        if let interruptionObserver {
+            NotificationCenter.default.removeObserver(interruptionObserver)
+        }
+        if let routeChangeObserver {
+            NotificationCenter.default.removeObserver(routeChangeObserver)
         }
     }
 
@@ -76,6 +114,8 @@ final class TunerViewModel: ObservableObject {
         referenceTimbre: ReferenceToneTimbre,
         announceEntry: Bool
     ) {
+        routeRestartTask?.cancel()
+        routeRestartTask = nil
         audioEngine.stop()
         speech.stop()
         isSpeechActive = false
@@ -90,12 +130,23 @@ final class TunerViewModel: ObservableObject {
         resetDetectionState()
         reading = nil
         liveReading = nil
+        isListening = false
         errorMessage = nil
         needsMicrophonePermission = false
         statusText = "准备聆听"
+        isPaused = false
+        resumeAfterLifecycle = false
+        wantsListening = true
+
+        guard isPageVisible, isSceneActive else {
+            resumeAfterLifecycle = true
+            statusText = "等待回到前台后继续"
+            return
+        }
 
         requestPermissionIfNeeded { [weak self] granted in
             guard let self else { return }
+            guard self.wantsListening else { return }
             guard granted else {
                 self.errorMessage = "麦克风权限未开启。请在系统设置中允许调音节拍器使用麦克风。"
                 self.needsMicrophonePermission = true
@@ -108,35 +159,139 @@ final class TunerViewModel: ObservableObject {
     }
 
     func stop() {
+        routeRestartTask?.cancel()
+        routeRestartTask = nil
         audioEngine.stop()
         speech.stop()
         isSpeechActive = false
         isListening = false
         isPaused = false
+        resumeAfterLifecycle = false
+        wantsListening = false
     }
 
     func pause() {
         guard isListening else { return }
+        routeRestartTask?.cancel()
+        routeRestartTask = nil
         audioEngine.stop()
         isListening = false
         isPaused = true
+        wantsListening = false
         statusText = "已暂停聆听"
         speak("已暂停聆听")
     }
 
     func pauseForOverlay() {
         guard isListening else { return }
+        routeRestartTask?.cancel()
+        routeRestartTask = nil
         audioEngine.stop()
         isListening = false
         isPaused = true
+        wantsListening = false
         statusText = "已暂停聆听"
     }
 
     func resume() {
         guard isPaused else { return }
         isPaused = false
+        wantsListening = true
+        if !isPageVisible || !isSceneActive {
+            resumeAfterLifecycle = true
+            statusText = "等待回到前台后继续"
+            return
+        }
         beginListening(announceEntry: false)
         speak("继续聆听")
+    }
+
+    func retryMicrophonePermission() {
+        start(
+            preset: preset,
+            string: targetString,
+            mode: mode,
+            concertA: concertA,
+            toleranceCents: toleranceCents,
+            feedbackMode: feedbackMode,
+            namingStyle: namingStyle,
+            referenceTimbre: referenceTimbre,
+            announceEntry: false
+        )
+    }
+
+    func handleScenePhaseChange(wasActive: Bool, isActive: Bool) {
+        guard wasActive != isActive else { return }
+        isSceneActive = isActive
+
+        if isActive {
+            resumeIfNeeded()
+        } else if isListening {
+            resumeAfterLifecycle = true
+            wantsListening = true
+            audioEngine.stop()
+            speech.stop()
+            isSpeechActive = false
+            isListening = false
+            isPaused = true
+            statusText = "已暂停聆听"
+        }
+    }
+
+    func pageDidDisappear() {
+        isPageVisible = false
+        routeRestartTask?.cancel()
+        routeRestartTask = nil
+        audioEngine.stop()
+        speech.stop()
+        isSpeechActive = false
+        isListening = false
+        isPaused = false
+        resumeAfterLifecycle = false
+        wantsListening = false
+    }
+
+    func pageWillAppear(sceneIsActive: Bool) {
+        isPageVisible = true
+        isSceneActive = sceneIsActive
+    }
+
+    func pageDidBecomeActive() {
+        isSceneActive = true
+        if needsMicrophonePermission {
+            retryMicrophonePermission()
+        } else {
+            resumeIfNeeded()
+        }
+    }
+
+    func prepareToListenWhenActive(
+        preset: InstrumentPreset,
+        string: TuningString?,
+        mode: DetectionMode,
+        concertA: Double,
+        toleranceCents: Double,
+        feedbackMode: AutoUpdateFeedbackMode,
+        namingStyle: NoteNamingStyle,
+        referenceTimbre: ReferenceToneTimbre
+    ) {
+        self.preset = preset
+        self.targetString = string
+        self.mode = mode
+        self.concertA = concertA
+        self.toleranceCents = toleranceCents
+        self.feedbackMode = feedbackMode
+        self.namingStyle = namingStyle
+        self.referenceTimbre = referenceTimbre
+        wantsListening = true
+        resumeAfterLifecycle = true
+        isPaused = false
+        statusText = "等待回到前台后继续"
+    }
+
+    func setSceneActive(_ isActive: Bool) {
+        guard isActive != isSceneActive else { return }
+        handleScenePhaseChange(wasActive: isSceneActive, isActive: isActive)
     }
 
     func queryResult() {
@@ -175,11 +330,14 @@ final class TunerViewModel: ObservableObject {
         switch session.recordPermission {
         case .granted:
             completion(true)
-        case .denied:
+        case .denied, .restricted:
             completion(false)
         case .undetermined:
+            guard !isRequestingPermission else { return }
+            isRequestingPermission = true
             session.requestRecordPermission { granted in
                 DispatchQueue.main.async {
+                    self.isRequestingPermission = false
                     completion(granted)
                 }
             }
@@ -189,6 +347,14 @@ final class TunerViewModel: ObservableObject {
     }
 
     private func beginListening(announceEntry: Bool) {
+        if isListening {
+            return
+        }
+        guard isPageVisible, isSceneActive else {
+            resumeAfterLifecycle = true
+            statusText = "等待回到前台后继续"
+            return
+        }
         do {
             try audioEngine.start { [weak self] estimate in
                 self?.handle(estimate)
@@ -203,8 +369,99 @@ final class TunerViewModel: ObservableObject {
             }
         } catch {
             isListening = false
+            isPaused = true
             errorMessage = error.localizedDescription
             statusText = "无法开始聆听"
+        }
+    }
+
+    private func resumeIfNeeded() {
+        guard isPageVisible, isSceneActive, wantsListening else { return }
+        guard resumeAfterLifecycle || (!isListening && !isPaused) else { return }
+
+        if needsMicrophonePermission {
+            retryMicrophonePermission()
+            return
+        }
+
+        resumeAfterLifecycle = false
+        isPaused = false
+        requestPermissionIfNeeded { [weak self] granted in
+            guard let self else { return }
+            guard self.wantsListening else { return }
+            guard granted else {
+                self.errorMessage = "麦克风权限未开启。请在系统设置中允许调音节拍器使用麦克风。"
+                self.needsMicrophonePermission = true
+                self.statusText = "需要麦克风权限"
+                self.isListening = false
+                return
+            }
+            self.beginListening(announceEntry: false)
+            if self.isListening {
+                self.speak("继续聆听")
+            } else {
+                self.resumeAfterLifecycle = false
+                self.isPaused = true
+            }
+        }
+    }
+
+    private func handleInterruption(_ notification: Notification) {
+        guard let rawType = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
+              let type = AVAudioSession.InterruptionType(rawValue: rawType) else {
+            return
+        }
+
+        switch type {
+        case .began:
+            guard isListening else { return }
+            resumeAfterLifecycle = true
+            wantsListening = true
+            routeRestartTask?.cancel()
+            routeRestartTask = nil
+            audioEngine.stop()
+            speech.stop()
+            isSpeechActive = false
+            isListening = false
+            isPaused = true
+            statusText = "音频被中断，等待恢复"
+        case .ended:
+            guard resumeAfterLifecycle, isPageVisible else { return }
+            if needsMicrophonePermission {
+                retryMicrophonePermission()
+                return
+            }
+            resumeIfNeeded()
+        @unknown default:
+            break
+        }
+    }
+
+    private func handleRouteChange(_ notification: Notification) {
+        guard let rawReason = notification.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt,
+              let reason = AVAudioSession.RouteChangeReason(rawValue: rawReason) else {
+            return
+        }
+        switch reason {
+        case .newDeviceAvailable, .oldDeviceUnavailable, .routeConfigurationChange:
+            break
+        default:
+            return
+        }
+        guard isListening, isPageVisible, isSceneActive else { return }
+
+        routeRestartTask?.cancel()
+        routeRestartTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(150))
+            guard !Task.isCancelled, let self, self.isListening, self.isSceneActive else { return }
+            self.audioEngine.stop()
+            self.speech.stop()
+            self.isSpeechActive = false
+            self.isListening = false
+            self.beginListening(announceEntry: false)
+            if self.isListening {
+                self.speak("音频输出已切换，继续聆听")
+            }
         }
     }
 
