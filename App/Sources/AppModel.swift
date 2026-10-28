@@ -75,9 +75,13 @@ enum AppLanguage: String, CaseIterable, Identifiable, Hashable {
 
     var title: String {
         switch self {
-        case .simplifiedChinese: return "简体中文"
-        case .english: return "English"
+        case .simplifiedChinese: return "简体中文（当前版本仅中文）"
+        case .english: return "English（尚未提供）"
         }
+    }
+
+    var isAvailable: Bool {
+        self == .simplifiedChinese
     }
 }
 
@@ -145,9 +149,10 @@ final class AppModel: ObservableObject {
         self.referenceToneTimbre = ReferenceToneTimbre(
             rawValue: defaults.string(forKey: Keys.referenceToneTimbre) ?? ""
         ) ?? .sine
-        self.language = AppLanguage(
+        let storedLanguage = AppLanguage(
             rawValue: defaults.string(forKey: Keys.language) ?? ""
         ) ?? .simplifiedChinese
+        self.language = storedLanguage.isAvailable ? storedLanguage : .simplifiedChinese
         self.tapTempoHapticsEnabled = defaults.object(forKey: Keys.tapTempoHapticsEnabled) as? Bool ?? true
     }
 

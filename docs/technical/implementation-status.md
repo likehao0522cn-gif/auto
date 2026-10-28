@@ -1,6 +1,6 @@
 # Implementation Status
 
-Updated: 2026-10-27
+Updated: 2026-10-28
 
 ## Implemented
 
@@ -30,6 +30,9 @@ Updated: 2026-10-27
 - In-tune earcon, direction-change full announcements, and low-confidence feedback
 - Piano automatic mode shows "自动识别" instead of a fixed target
 - Tap tempo plays a short confirmation click for each tap
+- Volume-button tap tempo is wired through the system volume observer and restores the user volume after each tap
+- Piano multiple-note warning uses conservative independent-peak detection
+- Metronome haptics follow the audio player's rendered time instead of accumulating timer drift
 - Core unit tests
 - GitHub Actions macOS build and test workflow
 - XcodeGen project configuration
@@ -47,10 +50,10 @@ Updated: 2026-10-27
 ## Not Yet Complete or Verified
 
 - No signed TestFlight build has been produced yet.
-- Volume-button tap tempo is not implemented.
-- Piano multiple-note rejection is not implemented.
-- Metronome haptics are not sample-time synchronized with the audio click.
-- Full Chinese and English localization is not implemented; the language picker currently does not change UI text or speech language.
+- Volume-button tap tempo is implemented but must be verified on a physical iPhone; iOS may block volume interception in some configurations.
+- Piano multiple-note detection is conservative and needs validation with recorded piano samples; it intentionally prefers false negatives over false warnings.
+- Metronome haptics are audio-time based but still require physical-device latency validation.
+- English localization is not implemented; the English option is disabled and clearly labelled as unavailable.
 - Real VoiceOver speech, overlap, and device focus order are not verified.
 - Haptic feedback is not verified on a physical device.
 - Metronome background playback, lock screen behavior, and audio routing are not verified.

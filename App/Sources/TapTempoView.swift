@@ -4,6 +4,7 @@ struct TapTempoView: View {
     @EnvironmentObject private var appModel: AppModel
     @EnvironmentObject private var metronome: MetronomeViewModel
     @StateObject private var viewModel = TapTempoViewModel()
+    @StateObject private var volumeButtons = TapTempoVolumeButtons()
 
     var body: some View {
         VStack(spacing: 20) {
@@ -75,13 +76,21 @@ struct TapTempoView: View {
             Toggle("拍点触觉反馈", isOn: $appModel.tapTempoHapticsEnabled)
                 .accessibilityHint("关闭后，记录拍点时不产生触觉反馈")
 
-            Text("音量键测速会在真机验证后启用。")
+            Text("可使用音量键记录拍点；该能力仍需真机验证，失败时请使用屏幕区域或“记录一拍”按钮。")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .accessibilityLabel("说明")
-                .accessibilityValue("音量键测速会在真机验证后启用")
+                .accessibilityValue("可使用音量键记录拍点，仍需真机验证。失败时请使用屏幕区域或记录一拍按钮")
         }
         .padding()
         .navigationTitle("测速")
+        .onAppear {
+            volumeButtons.start {
+                viewModel.tap(hapticsEnabled: appModel.tapTempoHapticsEnabled)
+            }
+        }
+        .onDisappear {
+            volumeButtons.stop()
+        }
     }
 }

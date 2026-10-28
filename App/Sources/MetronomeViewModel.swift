@@ -24,7 +24,7 @@ final class MetronomeViewModel: ObservableObject {
         didSet {
             saveConfiguration()
             if hapticsEnabled, isPlaying {
-                startHapticLoop(after: 0)
+                startHapticLoop()
             } else if !hapticsEnabled {
                 hapticTask?.cancel()
                 hapticTask = nil
@@ -42,6 +42,8 @@ final class MetronomeViewModel: ObservableObject {
     private var interruptionObserver: NSObjectProtocol?
     private var hapticTask: Task<Void, Never>?
     private var statusTask: Task<Void, Never>?
+    private var scheduledHapticPattern: [MetronomeClick] = []
+    private var scheduledCountInDuration: TimeInterval = 0
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -158,6 +160,8 @@ final class MetronomeViewModel: ObservableObject {
         let countInDuration = configuration.countInBars.rawValue > 0
             ? configuration.barDuration * Double(configuration.countInBars.rawValue)
             : 0
+        scheduledCountInDuration = countInDuration
+        scheduledHapticPattern = MetronomePattern.clicks(for: configuration)
 
         if configuration.countInBars.rawValue > 0 {
             statusText = "预备拍，\(configuration.countInBars.title)"
@@ -172,14 +176,14 @@ final class MetronomeViewModel: ObservableObject {
             speak("节拍器开始")
         }
 
-        startHapticLoop(after: countInDuration)
+        startHapticLoop()
     }
 
     private var playingStatusText: String {
         "正在播放 \(Int(configuration.bpm)) BPM，\(configuration.timeSignature.id)，\(timbre.title)"
     }
 
-    private func startHapticLoop(after delay: TimeInterval) {
+    private func startHapticLoop() {
         hapticTask?.cancel()
         guard hapticsEnabled else {
             hapticTask = nil
@@ -187,30 +191,35 @@ final class MetronomeViewModel: ObservableObject {
         }
 
         hapticTask = Task { @MainActor [weak self] in
-            if delay > 0 {
-                try? await Task.sleep(for: .seconds(delay))
-            }
             guard !Task.isCancelled, let self, self.isPlaying else { return }
-
-            var clickIndex = 0
-            let pattern = MetronomePattern.clicks(for: self.configuration)
-            guard !pattern.isEmpty else { return }
-
+            let pattern = self.scheduledHapticPattern
+            guard !pattern.isEmpty, self.configuration.barDuration > 0 else { return }
+            let countInDuration = self.scheduledCountInDuration
+            let patternDuration = self.configuration.barDuration
+            var lastHapticLoopIndex: Int?
+            var lastHapticClickIndex: Int?
             while !Task.isCancelled {
                 guard self.isPlaying, self.hapticsEnabled else { return }
-                let click = pattern[clickIndex % pattern.count]
-                self.tickHaptic(isAccent: click.isAccent)
-                clickIndex = (clickIndex + 1) % pattern.count
 
-                let nextIndex = clickIndex % pattern.count
-                let interval: TimeInterval
-                if nextIndex == 0 {
-                    interval = self.configuration.barDuration - pattern[pattern.count - 1].time
-                } else {
-                    interval = pattern[nextIndex].time - pattern[nextIndex - 1].time
+                if let elapsed = self.engine.playbackElapsedTime() {
+                    let loopsElapsed = max(0, Int(floor((elapsed - countInDuration) / patternDuration)))
+                    let timeInLoop = elapsed - countInDuration - Double(loopsElapsed) * patternDuration
+                    if timeInLoop >= 0, timeInLoop < 0.03 {
+                        let nearestIndex = pattern.indices.min {
+                            abs(pattern[$0].time - timeInLoop) < abs(pattern[$1].time - timeInLoop)
+                        }
+                        if let nearestIndex,
+                           abs(pattern[nearestIndex].time - timeInLoop) < 0.02,
+                           lastHapticLoopIndex != loopsElapsed || lastHapticClickIndex != nearestIndex {
+                            let nearest = pattern[nearestIndex]
+                            self.tickHaptic(isAccent: nearest.isAccent)
+                            lastHapticLoopIndex = loopsElapsed
+                            lastHapticClickIndex = nearestIndex
+                        }
+                    }
                 }
-                guard interval > 0 else { return }
-                try? await Task.sleep(for: .seconds(interval))
+
+                try? await Task.sleep(for: .milliseconds(15))
             }
         }
     }

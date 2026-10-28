@@ -187,10 +187,16 @@ struct OtherSettingsView: View {
             Section("语言") {
                 Picker("界面语言", selection: $appModel.language) {
                     ForEach(AppLanguage.allCases) { language in
-                        Text(language.title).tag(language)
+                        Text(language.title)
+                            .tag(language)
+                            .disabled(!language.isAvailable)
                     }
                 }
                 .pickerStyle(.inline)
+
+                Text("英文界面和英文语音尚未完成，当前版本使用中文。")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
 
             Section("隐私") {

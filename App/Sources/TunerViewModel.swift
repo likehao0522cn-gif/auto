@@ -68,6 +68,7 @@ final class TunerViewModel: ObservableObject {
     private var lastUpdateAt: Date?
     private var autoUpdateCount: Int = 0
     private var lastPresentedReading: TuningReading?
+    private var isShowingMultiplePitchWarning = false
     private var isSpeechActive = false
     private var onSpeechComplete: (() -> Void)?
     private var interruptionObserver: NSObjectProtocol?
@@ -493,6 +494,18 @@ final class TunerViewModel: ObservableObject {
 
         let now = Date()
 
+        if estimate.hasMultiplePitches {
+            if !isShowingMultiplePitchWarning {
+                isShowingMultiplePitchWarning = true
+                resetPluck()
+                liveReading = nil
+                statusText = "检测到多个音，请一次弹一个音"
+                speak("检测到多个音，请一次弹一个音")
+            }
+            return
+        }
+        isShowingMultiplePitchWarning = false
+
         guard let frequency = estimate.frequency, estimate.isReliable else {
             let silenceDuration = lastSoundAt.map { now.timeIntervalSince($0) } ?? .infinity
             if silenceDuration >= 0.3 {
@@ -643,6 +656,7 @@ final class TunerViewModel: ObservableObject {
         lastUpdateAt = nil
         autoUpdateCount = 0
         lastPresentedReading = nil
+        isShowingMultiplePitchWarning = false
     }
 
     private func resetDetectionState() {

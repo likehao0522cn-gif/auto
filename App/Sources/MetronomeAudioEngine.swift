@@ -7,11 +7,26 @@ final class MetronomeAudioEngine {
     private let sampleRate: Double = 44_100
     private var isAttached = false
     private var isPlaying = false
+    private var firstRenderedSampleTime: AVAudioFramePosition?
     private(set) var configuration = MetronomeConfiguration()
+
+    func playbackElapsedTime() -> TimeInterval? {
+        guard isPlaying,
+              let nodeTime = player.lastRenderTime,
+              let playerTime = player.playerTime(forNodeTime: nodeTime) else {
+            return nil
+        }
+        if firstRenderedSampleTime == nil {
+            firstRenderedSampleTime = playerTime.sampleTime
+        }
+        guard let first = firstRenderedSampleTime else { return nil }
+        return Double(playerTime.sampleTime - first) / sampleRate
+    }
 
     func start(configuration: MetronomeConfiguration, timbre: MetronomeTimbre) throws {
         stop()
         self.configuration = configuration
+        firstRenderedSampleTime = nil
         try AudioSessionManager.configureForMetronome()
 
         if !isAttached {
@@ -60,6 +75,7 @@ final class MetronomeAudioEngine {
             engine.stop()
         }
         isPlaying = false
+        firstRenderedSampleTime = nil
         AudioSessionManager.deactivate()
     }
 
