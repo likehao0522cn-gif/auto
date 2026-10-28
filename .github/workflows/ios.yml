@@ -12,6 +12,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Verify source revision
+        run: |
+          set -euo pipefail
+          echo "Checked out commit: $(git rev-parse HEAD)"
+          grep -q '快速调音' App/Sources/HomeView.swift
+
       - name: Run core tests with SwiftPM
         run: |
           set +e
@@ -89,6 +95,7 @@ jobs:
       - name: Build unsigned device app
         run: |
           set -euo pipefail
+          rm -rf build
           xcodebuild build \
             -project TuneMetronome.xcodeproj \
             -scheme TuneMetronome \
@@ -103,6 +110,7 @@ jobs:
           set -euo pipefail
           APP_PATH="$(find build/Build/Products/Release-iphoneos -maxdepth 1 -name '*.app' -type d | head -1)"
           test -n "$APP_PATH"
+          grep -a -q '快速调音' "$APP_PATH/TuneMetronome"
           rm -rf unsigned-ipa
           mkdir -p unsigned-ipa/Payload
           cp -R "$APP_PATH" unsigned-ipa/Payload/
