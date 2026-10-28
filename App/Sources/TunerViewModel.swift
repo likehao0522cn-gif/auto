@@ -69,6 +69,7 @@ final class TunerViewModel: ObservableObject {
     private var autoUpdateCount: Int = 0
     private var lastPresentedReading: TuningReading?
     private var isShowingMultiplePitchWarning = false
+    private var lastLiveReadingPublishAt: Date = .distantPast
     private var isSpeechActive = false
     private var onSpeechComplete: (() -> Void)?
     private var interruptionObserver: NSObjectProtocol?
@@ -516,7 +517,10 @@ final class TunerViewModel: ObservableObject {
         previousRMS = estimate.rms
 
         let live = makeReading(frequency: frequency, confidence: estimate.confidence)
-        liveReading = live
+        if now.timeIntervalSince(lastLiveReadingPublishAt) >= 0.25 {
+            liveReading = live
+            lastLiveReadingPublishAt = now
+        }
 
         pluckFrequencies.append(frequency)
         if pluckFrequencies.count > 8 {
@@ -670,6 +674,7 @@ final class TunerViewModel: ObservableObject {
     private func resetDetectionState() {
         resetPluck()
         lastSoundAt = nil
+        lastLiveReadingPublishAt = .distantPast
     }
 }
 

@@ -42,6 +42,7 @@ struct HelpView: View {
             } label: {
                 Text(topic.title)
             }
+            .accessibilityLabel(topic.title)
             .accessibilityHint("打开帮助文章")
         }
         .navigationTitle("帮助")
@@ -60,8 +61,7 @@ struct HelpArticleView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .navigationTitle(topic.title)
-        .accessibilityLabel(topic.title)
-        .accessibilityValue(topic.body)
+        .accessibilityElement(children: .contain)
     }
 }
 

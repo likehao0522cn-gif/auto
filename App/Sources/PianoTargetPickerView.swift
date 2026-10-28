@@ -26,12 +26,14 @@ struct PianoTargetPickerView: View {
                         Text("第 \(octave) 八度").tag(octave)
                     }
                 }
+                .accessibilityLabel("八度")
 
                 Picker("音名", selection: $noteIndex) {
                     ForEach(availableNoteIndices, id: \.self) { index in
                         Text(appModel.displayName(forMIDI: (octave + 1) * 12 + index)).tag(index)
                     }
                 }
+                .accessibilityLabel("音名")
             }
 
             Section {
@@ -43,6 +45,7 @@ struct PianoTargetPickerView: View {
                     appModel.pianoTargetMIDI = selectedMIDI
                     dismiss()
                 }
+                .accessibilityLabel("应用目标音")
                 .accessibilityHint("返回调音器并使用这个目标音")
             }
         }

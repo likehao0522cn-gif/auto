@@ -13,10 +13,12 @@ struct MetronomeSoundSettingsView: View {
                     }
                 }
                 .pickerStyle(.inline)
+                .accessibilityLabel("节拍器音色")
             }
 
             Section("触觉") {
                 Toggle("播放时使用触觉打拍", isOn: $metronome.hapticsEnabled)
+                    .accessibilityLabel("播放时使用触觉打拍")
                     .accessibilityHint("开启后，节拍器播放期间会按当前拍号和细分拍产生震动")
             }
 

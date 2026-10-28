@@ -32,18 +32,17 @@ struct MetronomeView: View {
                 ) {
                     Text("调整速度")
                 }
+                .accessibilityLabel("调整速度")
                 .accessibilityValue("\(Int(metronome.configuration.bpm)) BPM")
 
                 Button {
                     metronome.toggle()
                 } label: {
-                    Label(
-                        metronome.isPlaying ? "停止" : "开始",
-                        systemImage: metronome.isPlaying ? "stop.fill" : "play.fill"
-                    )
-                    .font(.headline)
-                    .frame(maxWidth: .infinity, minHeight: 52)
+                    Text(metronome.isPlaying ? "停止" : "开始")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, minHeight: 52)
                 }
+                .accessibilityLabel(metronome.isPlaying ? "停止节拍器" : "开始节拍器")
                 .buttonStyle(.borderedProminent)
                 .accessibilityHint(metronome.isPlaying ? "停止节拍器" : "开始播放节拍器")
                 .accessibilityFocused($focusedSection, equals: .playback)
@@ -53,39 +52,44 @@ struct MetronomeView: View {
                 NavigationLink {
                     MetronomeSoundSettingsView()
                 } label: {
-                    Label("音色和触觉", systemImage: "waveform")
-                        .accessibilityFocused($focusedSection, equals: .soundSettings)
+                    Text("音色和触觉")
                 }
+                .accessibilityLabel("音色和触觉")
+                .accessibilityFocused($focusedSection, equals: .soundSettings)
 
                 NavigationLink {
                     BeatSettingsView()
                 } label: {
-                    Label("拍号、重音和细分拍", systemImage: "music.note.list")
-                        .accessibilityFocused($focusedSection, equals: .beatSettings)
+                    Text("拍号、重音和细分拍")
                 }
+                .accessibilityLabel("拍号、重音和细分拍")
+                .accessibilityFocused($focusedSection, equals: .beatSettings)
 
                 NavigationLink {
                     TapTempoView()
                 } label: {
-                    Label("测速", systemImage: "hand.tap")
-                        .accessibilityFocused($focusedSection, equals: .tapTempo)
+                    Text("测速")
                 }
+                .accessibilityLabel("测速")
+                .accessibilityFocused($focusedSection, equals: .tapTempo)
 
                 NavigationLink {
                     CountInView()
                 } label: {
-                    Label("预备拍", systemImage: "hourglass")
-                        .accessibilityFocused($focusedSection, equals: .countIn)
+                    Text("预备拍")
                 }
+                .accessibilityLabel("预备拍")
+                .accessibilityFocused($focusedSection, equals: .countIn)
             }
 
             Section {
                 NavigationLink {
                     MetronomeHelpView()
                 } label: {
-                    Label("帮助", systemImage: "questionmark.circle")
-                        .accessibilityFocused($focusedSection, equals: .help)
+                    Text("帮助")
                 }
+                .accessibilityLabel("帮助")
+                .accessibilityFocused($focusedSection, equals: .help)
             }
 
             if let errorMessage = metronome.errorMessage {

@@ -13,6 +13,7 @@ struct CountInView: View {
                     }
                 }
                 .pickerStyle(.inline)
+                .accessibilityLabel("预备拍")
 
                 Text("预备拍会在正式播放前建立速度和拍感。")
                     .font(.footnote)

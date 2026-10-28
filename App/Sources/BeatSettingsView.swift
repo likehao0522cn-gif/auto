@@ -30,6 +30,7 @@ struct BeatSettingsView: View {
                     }
                 }
                 .pickerStyle(.inline)
+                .accessibilityLabel("重音")
             }
 
             Section("细分拍") {
@@ -39,6 +40,7 @@ struct BeatSettingsView: View {
                     }
                 }
                 .pickerStyle(.inline)
+                .accessibilityLabel("细分拍")
             }
         }
         .navigationTitle("节拍设置")

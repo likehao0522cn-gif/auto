@@ -7,46 +7,52 @@ struct SettingsView: View {
                 NavigationLink {
                     TuningSettingsView()
                 } label: {
-                    Label("音高、容差和反馈", systemImage: "tuningfork")
+                    Text("音高、容差和反馈")
                 }
+                .accessibilityLabel("音高、容差和反馈")
             }
 
             Section("声音") {
                 NavigationLink {
                     SoundSettingsView()
                 } label: {
-                    Label("参考音和语音", systemImage: "speaker.wave.2")
+                    Text("参考音和语音")
                 }
+                .accessibilityLabel("参考音和语音")
             }
 
             Section("节拍器") {
                 NavigationLink {
                     MetronomeSettingsView()
                 } label: {
-                    Label("节拍器设置", systemImage: "metronome")
+                    Text("节拍器设置")
                 }
+                .accessibilityLabel("节拍器设置")
             }
 
             Section("无障碍") {
                 NavigationLink {
                     AccessibilitySettingsView()
                 } label: {
-                    Label("VoiceOver 和触觉", systemImage: "accessibility")
+                    Text("VoiceOver 和触觉")
                 }
+                .accessibilityLabel("VoiceOver 和触觉")
             }
 
             Section("其他") {
                 NavigationLink {
                     OtherSettingsView()
                 } label: {
-                    Label("语言、隐私和恢复默认", systemImage: "info.circle")
+                    Text("语言、隐私和恢复默认")
                 }
+                .accessibilityLabel("语言、隐私和恢复默认")
 
                 NavigationLink {
                     DiagnosticsView()
                 } label: {
-                    Label("诊断", systemImage: "stethoscope")
+                    Text("诊断")
                 }
+                .accessibilityLabel("诊断")
             }
         }
         .navigationTitle("设置")
@@ -77,6 +83,7 @@ struct TuningSettingsView: View {
                     Text("±5 音分").tag(5.0)
                 }
                 .pickerStyle(.segmented)
+                .accessibilityLabel("准音容差")
             }
 
             Section("音名读法") {
@@ -86,6 +93,7 @@ struct TuningSettingsView: View {
                     }
                 }
                 .pickerStyle(.inline)
+                .accessibilityLabel("音名读法")
             }
 
             Section("自动更新反馈") {
@@ -95,6 +103,7 @@ struct TuningSettingsView: View {
                     }
                 }
                 .pickerStyle(.inline)
+                .accessibilityLabel("自动更新反馈")
 
                 Text("首次检测结果始终播报完整音名和音分。")
                     .font(.footnote)
@@ -117,6 +126,7 @@ struct SoundSettingsView: View {
                     }
                 }
                 .pickerStyle(.inline)
+                .accessibilityLabel("参考音音色")
             }
 
             Section {
@@ -147,8 +157,9 @@ struct MetronomeSettingsView: View {
                 NavigationLink {
                     MetronomeSoundSettingsView()
                 } label: {
-                    Label("音色和触觉", systemImage: "waveform")
+                    Text("音色和触觉")
                 }
+                .accessibilityLabel("音色和触觉")
 
                 Button("恢复节拍器默认设置", role: .destructive) {
                     metronome.resetDefaults()

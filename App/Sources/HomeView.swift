@@ -9,9 +9,6 @@ struct HomeView: View {
             if metronome.isPlaying {
                 Section {
                     HStack(alignment: .center, spacing: 12) {
-                        Image(systemName: "metronome.fill")
-                            .font(.title2)
-                            .accessibilityHidden(true)
                         VStack(alignment: .leading, spacing: 4) {
                             Text("节拍器正在播放")
                                 .font(.headline)
@@ -32,15 +29,17 @@ struct HomeView: View {
                 NavigationLink {
                     TunerView()
                 } label: {
-                    Label("快速调音", systemImage: "music.note")
+                    Text("快速调音")
                 }
+                .accessibilityLabel("快速调音")
                 .accessibilityHint("使用上次的乐器和弦位，进入后自动开始聆听")
 
                 NavigationLink {
                     MetronomeView()
                 } label: {
-                    Label("快速节拍", systemImage: "metronome")
+                    Text("快速节拍")
                 }
+                .accessibilityLabel("快速节拍")
                 .accessibilityHint("使用上次的节拍器设置，不会自动播放")
             }
 
@@ -48,26 +47,30 @@ struct HomeView: View {
                 NavigationLink {
                     TunerView()
                 } label: {
-                    Label("调音器", systemImage: "tuningfork")
+                    Text("调音器")
                 }
+                .accessibilityLabel("调音器")
 
                 NavigationLink {
                     MetronomeView()
                 } label: {
-                    Label("节拍器", systemImage: "metronome")
+                    Text("节拍器")
                 }
+                .accessibilityLabel("节拍器")
 
                 NavigationLink {
                     HelpView()
                 } label: {
-                    Label("帮助", systemImage: "questionmark.circle")
+                    Text("帮助")
                 }
+                .accessibilityLabel("帮助")
 
                 NavigationLink {
                     SettingsView()
                 } label: {
-                    Label("设置", systemImage: "gearshape")
+                    Text("设置")
                 }
+                .accessibilityLabel("设置")
             }
 
             Section("当前乐器") {

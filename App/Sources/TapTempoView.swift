@@ -11,6 +11,7 @@ struct TapTempoView: View {
             Text("测速")
                 .font(.headline)
                 .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
 
             Text(viewModel.bpm.map { "\(Int($0.rounded())) BPM" } ?? "等待拍点")
                 .font(.system(size: 44, weight: .bold, design: .rounded))
@@ -44,15 +45,15 @@ struct TapTempoView: View {
 
             Text("已记录 \(viewModel.tapCount) 拍")
                 .foregroundStyle(.secondary)
-                .accessibilityLabel("已记录拍点")
-                .accessibilityValue("\(viewModel.tapCount) 拍")
+                .accessibilityHidden(true)
 
             Button {
                 viewModel.tap(hapticsEnabled: appModel.tapTempoHapticsEnabled)
             } label: {
-                Label("记录一拍", systemImage: "plus.circle.fill")
+                Text("记录一拍")
                     .frame(maxWidth: .infinity, minHeight: 48)
             }
+            .accessibilityLabel("记录一拍")
             .buttonStyle(.bordered)
             .accessibilityHint("VoiceOver 下也可以双击这个按钮记录拍点")
 
@@ -61,9 +62,10 @@ struct TapTempoView: View {
                     metronome.applyTapTempo(bpm)
                 }
             } label: {
-                Label("应用到节拍器", systemImage: "checkmark.circle.fill")
+                Text("应用到节拍器")
                     .frame(maxWidth: .infinity, minHeight: 48)
             }
+            .accessibilityLabel("应用到节拍器")
             .buttonStyle(.borderedProminent)
             .disabled(viewModel.bpm == nil)
             .accessibilityHint("把测速结果设为当前节拍器速度")
@@ -79,8 +81,7 @@ struct TapTempoView: View {
             Text("可使用音量键记录拍点；该能力仍需真机验证，失败时请使用屏幕区域或“记录一拍”按钮。")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
-                .accessibilityLabel("说明")
-                .accessibilityValue("可使用音量键记录拍点，仍需真机验证。失败时请使用屏幕区域或记录一拍按钮")
+                .accessibilityLabel("说明：可使用音量键记录拍点，仍需真机验证。失败时请使用屏幕区域或记录一拍按钮")
         }
         .padding()
         .navigationTitle("测速")

@@ -52,15 +52,17 @@ struct DiagnosticsView: View {
                     UIPasteboard.general.string = diagnosticText
                     didCopy = true
                 } label: {
-                    Label(didCopy ? "已复制诊断信息" : "复制诊断信息", systemImage: "doc.on.doc")
+                    Text(didCopy ? "已复制诊断信息" : "复制诊断信息")
                 }
+                .accessibilityLabel(didCopy ? "已复制诊断信息" : "复制诊断信息")
                 .accessibilityHint("复制当前诊断信息，方便发送给开发者")
 
                 Button {
                     openSystemSettings()
                 } label: {
-                    Label("打开系统设置", systemImage: "gearshape")
+                    Text("打开系统设置")
                 }
+                .accessibilityLabel("打开系统设置")
                 .accessibilityHint("打开系统设置，检查麦克风或声音权限")
 
                 Text("诊断信息不包含音频、Apple ID 或密码。")
