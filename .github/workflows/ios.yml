@@ -13,7 +13,23 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run core tests with SwiftPM
-        run: swift test
+        run: |
+          set +e
+          swift test 2>&1 | tee swift-test.log
+          TEST_EXIT_CODE=${PIPESTATUS[0]}
+          set -e
+          exit $TEST_EXIT_CODE
+
+      - name: Report SwiftPM errors
+        if: failure()
+        run: |
+          if [ -f swift-test.log ]; then
+            grep -n -E 'error:' swift-test.log \
+              | tail -80 \
+              | while IFS= read -r line; do
+                  echo "::error title=swift-test::$line"
+                done
+          fi
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -60,6 +76,14 @@ jobs:
         with:
           name: xcodebuild-test-log
           path: xcodebuild-test.log
+          if-no-files-found: ignore
+
+      - name: Upload SwiftPM log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: swift-test-log
+          path: swift-test.log
           if-no-files-found: ignore
 
       - name: Build unsigned device app
