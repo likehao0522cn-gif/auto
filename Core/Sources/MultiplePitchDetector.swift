@@ -47,17 +47,19 @@ public enum MultiplePitchDetector {
                 strongestConfidence: primaryConfidence
             )
         }
-        let candidateFrequencies = stride(from: 55.0, through: 2_000.0, by: 5.0)
-            .filter { candidate in
+        let candidateFrequencies: [Double] = Array(stride(from: 55.0, through: 2_000.0, by: 5.0))
+        let independentCandidates: [Double] = candidateFrequencies.filter { (candidate: Double) -> Bool in
                 let harmonicRatio = candidate / primaryFrequency
-                guard harmonicRatio < 0.95 || harmonicRatio > 1.05 else { return false }
+            if harmonicRatio >= 0.95 && harmonicRatio <= 1.05 {
+                return false
+            }
                 let nearestHarmonic = (1...8).map { Double($0) }.min {
                     abs(harmonicRatio - $0) < abs(harmonicRatio - $1)
                 } ?? 2
                 return abs(harmonicRatio - nearestHarmonic) > 0.06
-            }
-        let peaks = candidateFrequencies
-            .filter { candidate in
+        }
+        let peaks = independentCandidates
+            .filter { candidate -> Bool in
                 let value = amplitude(samples: samples, sampleRate: sampleRate, frequency: candidate)
                 let lower = amplitude(samples: samples, sampleRate: sampleRate, frequency: candidate - 10)
                 let upper = amplitude(samples: samples, sampleRate: sampleRate, frequency: candidate + 10)
