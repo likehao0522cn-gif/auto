@@ -35,8 +35,9 @@ public enum MultiplePitchDetector {
             )
         }
 
+        let analysisSamples = Array(samples.prefix(4_096))
         let fundamentalMagnitude = amplitude(
-            samples: samples,
+            samples: analysisSamples,
             sampleRate: sampleRate,
             frequency: primaryFrequency
         )
@@ -47,7 +48,7 @@ public enum MultiplePitchDetector {
                 strongestConfidence: primaryConfidence
             )
         }
-        let candidateFrequencies: [Double] = Array(stride(from: 55.0, through: 2_000.0, by: 5.0))
+        let candidateFrequencies: [Double] = Array(stride(from: 55.0, through: 2_000.0, by: 20.0))
         let independentCandidates: [Double] = candidateFrequencies.filter { (candidate: Double) -> Bool in
                 let harmonicRatio = candidate / primaryFrequency
             if harmonicRatio >= 0.95 && harmonicRatio <= 1.05 {
@@ -60,13 +61,13 @@ public enum MultiplePitchDetector {
         }
         let peaks = independentCandidates
             .filter { candidate -> Bool in
-                let value = amplitude(samples: samples, sampleRate: sampleRate, frequency: candidate)
-                let lower = amplitude(samples: samples, sampleRate: sampleRate, frequency: candidate - 10)
-                let upper = amplitude(samples: samples, sampleRate: sampleRate, frequency: candidate + 10)
+                let value = amplitude(samples: analysisSamples, sampleRate: sampleRate, frequency: candidate)
+                let lower = amplitude(samples: analysisSamples, sampleRate: sampleRate, frequency: candidate - 20)
+                let upper = amplitude(samples: analysisSamples, sampleRate: sampleRate, frequency: candidate + 20)
                 return value > lower && value > upper
             }
             .map { frequency in
-                (frequency, amplitude(samples: samples, sampleRate: sampleRate, frequency: frequency))
+                (frequency, amplitude(samples: analysisSamples, sampleRate: sampleRate, frequency: frequency))
             }
         let secondStrongest = peaks.max { $0.1 < $1.1 }
 

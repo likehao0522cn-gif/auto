@@ -4,22 +4,15 @@ public struct PitchEstimate: Equatable, Sendable {
     public let frequency: Double?
     public let confidence: Double
     public let rms: Double
-    public let hasMultiplePitches: Bool
 
-    public init(
-        frequency: Double?,
-        confidence: Double,
-        rms: Double,
-        hasMultiplePitches: Bool = false
-    ) {
+    public init(frequency: Double?, confidence: Double, rms: Double) {
         self.frequency = frequency
         self.confidence = confidence
         self.rms = rms
-        self.hasMultiplePitches = hasMultiplePitches
     }
 
     public var isReliable: Bool {
-        guard frequency != nil, !hasMultiplePitches else { return false }
+        guard frequency != nil else { return false }
         return confidence >= 0.55 && rms >= 0.002
     }
 }
@@ -134,19 +127,10 @@ public struct PitchDetector: Sendable {
             return PitchEstimate(frequency: nil, confidence: 0, rms: rms)
         }
 
-        let multiplePitchResult = MultiplePitchDetector.detect(
-            samples: samples,
-            sampleRate: sampleRate,
-            primaryFrequency: frequency,
-            primaryConfidence: max(0, min(1, 1 - y1)),
-            rms: rms
-        )
-
         return PitchEstimate(
             frequency: frequency,
             confidence: max(0, min(1, 1 - y1)),
-            rms: rms,
-            hasMultiplePitches: multiplePitchResult.isMultiplePitches
+            rms: rms
         )
     }
 

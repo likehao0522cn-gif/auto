@@ -92,4 +92,28 @@ final class MultiplePitchDetectorTests: XCTestCase {
 
         XCTAssertFalse(result.isMultiplePitches)
     }
+
+    func testDetectionIsFastEnoughForStableResultUse() {
+        let samples = (0..<4_096).map { index in
+            let time = Double(index) / sampleRate
+            return Float(
+                sin(2 * Double.pi * 220 * time) * 0.3
+                + sin(2 * Double.pi * 311 * time) * 0.3
+            )
+        }
+
+        let start = Date()
+        for _ in 0..<3 {
+            _ = MultiplePitchDetector.detect(
+                samples: samples,
+                sampleRate: sampleRate,
+                primaryFrequency: 220,
+                primaryConfidence: 0.9,
+                rms: 0.3
+            )
+        }
+        let elapsed = Date().timeIntervalSince(start) / 3
+
+        XCTAssertLessThan(elapsed, 0.15)
+    }
 }

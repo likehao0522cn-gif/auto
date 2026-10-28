@@ -32,7 +32,7 @@ final class TunerAudioEngine {
     private var generation = 0
     private var tapInstalled = false
 
-    func start(onEstimate: @escaping (PitchEstimate) -> Void) throws {
+    func start(onEstimate: @escaping (PitchEstimate, [Float], Double) -> Void) throws {
         guard !isRunning else { return }
 
         let session = AVAudioSession.sharedInstance()
@@ -66,7 +66,7 @@ final class TunerAudioEngine {
                 let estimate = self.detector.detect(samples: samples, sampleRate: sampleRate)
                 DispatchQueue.main.async { [weak self] in
                     guard let self, self.generation == currentGeneration, self.isRunning else { return }
-                    onEstimate(estimate)
+                    onEstimate(estimate, samples, sampleRate)
                 }
             }
         }

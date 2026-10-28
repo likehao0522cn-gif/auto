@@ -373,8 +373,8 @@ final class TunerViewModel: ObservableObject {
             return
         }
         do {
-            try audioEngine.start { [weak self] estimate in
-                self?.handle(estimate)
+            try audioEngine.start { [weak self] estimate, samples, sampleRate in
+                self?.handle(estimate, samples: samples, sampleRate: sampleRate)
             }
             isListening = true
             isPaused = false
@@ -489,22 +489,10 @@ final class TunerViewModel: ObservableObject {
         return "调音器，\(preset.displayName)，\(target)，正在聆听"
     }
 
-    private func handle(_ estimate: PitchEstimate) {
+    private func handle(_ estimate: PitchEstimate, samples: [Float], sampleRate: Double) {
         guard isListening, !isPaused, !isSpeechActive else { return }
 
         let now = Date()
-
-        if estimate.hasMultiplePitches {
-            if !isShowingMultiplePitchWarning {
-                isShowingMultiplePitchWarning = true
-                resetPluck()
-                liveReading = nil
-                statusText = "检测到多个音，请一次弹一个音"
-                speak("检测到多个音，请一次弹一个音")
-            }
-            return
-        }
-        isShowingMultiplePitchWarning = false
 
         guard let frequency = estimate.frequency, estimate.isReliable else {
             let silenceDuration = lastSoundAt.map { now.timeIntervalSince($0) } ?? .infinity
@@ -544,6 +532,26 @@ final class TunerViewModel: ObservableObject {
 
         let recent = Array(pluckFrequencies.suffix(5)).sorted()
         let medianFrequency = recent[recent.count / 2]
+
+        let multiplePitchResult = MultiplePitchDetector.detect(
+            samples: samples,
+            sampleRate: sampleRate,
+            primaryFrequency: medianFrequency,
+            primaryConfidence: estimate.confidence,
+            rms: estimate.rms
+        )
+        if multiplePitchResult.isMultiplePitches {
+            if !isShowingMultiplePitchWarning {
+                isShowingMultiplePitchWarning = true
+                resetPluck()
+                liveReading = nil
+                statusText = "检测到多个音，请一次弹一个音"
+                speak("检测到多个音，请一次弹一个音")
+            }
+            return
+        }
+        isShowingMultiplePitchWarning = false
+
         let stableReading = makeReading(frequency: medianFrequency, confidence: estimate.confidence)
 
         if lastAnnouncedCents == nil {
