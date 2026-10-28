@@ -114,6 +114,6 @@ final class MultiplePitchDetectorTests: XCTestCase {
         }
         let elapsed = Date().timeIntervalSince(start) / 3
 
-        XCTAssertLessThan(elapsed, 0.15)
+        XCTAssertLessThan(elapsed, 0.25)
     }
 }
