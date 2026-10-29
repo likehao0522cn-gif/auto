@@ -75,8 +75,8 @@ enum AppLanguage: String, CaseIterable, Identifiable, Hashable {
 
     var title: String {
         switch self {
-        case .simplifiedChinese: return "简体中文（当前版本仅中文）"
-        case .english: return "English（尚未提供）"
+        case .simplifiedChinese: return "简体中文（当前版本仅提供中文）"
+        case .english: return "英语（尚未提供）"
         }
     }
 

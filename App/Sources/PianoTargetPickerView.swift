@@ -21,32 +21,39 @@ struct PianoTargetPickerView: View {
     var body: some View {
         Form {
             Section("选择目标音") {
-                Picker("八度", selection: $octave) {
+                Picker(selection: $octave) {
                     ForEach(0...8, id: \.self) { octave in
-                        Text("第 \(octave) 八度").tag(octave)
+                        Text(verbatim: "第 \(octave) 八度").tag(octave)
                     }
+                } label: {
+                    Text(verbatim: "八度")
                 }
-                .accessibilityLabel("八度")
+                .accessibilityLabel(Text(verbatim: "八度"))
 
-                Picker("音名", selection: $noteIndex) {
+                Picker(selection: $noteIndex) {
                     ForEach(availableNoteIndices, id: \.self) { index in
-                        Text(appModel.displayName(forMIDI: (octave + 1) * 12 + index)).tag(index)
+                        Text(verbatim: appModel.displayName(forMIDI: (octave + 1) * 12 + index)).tag(index)
                     }
+                } label: {
+                    Text(verbatim: "音名")
                 }
-                .accessibilityLabel("音名")
+                .accessibilityLabel(Text(verbatim: "音名"))
             }
 
             Section {
-                Text("当前目标：\(appModel.displayName(forMIDI: selectedMIDI))")
-                    .accessibilityLabel("当前目标")
-                    .accessibilityValue(appModel.displayName(forMIDI: selectedMIDI))
+                Text(verbatim: "当前目标：\(appModel.displayName(forMIDI: selectedMIDI))")
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(Text(verbatim: "当前目标"))
+                    .accessibilityValue(Text(verbatim: appModel.displayName(forMIDI: selectedMIDI)))
 
-                Button("应用目标音") {
+                Button {
                     appModel.pianoTargetMIDI = selectedMIDI
                     dismiss()
+                } label: {
+                    Text(verbatim: "应用目标音")
                 }
-                .accessibilityLabel("应用目标音")
-                .accessibilityHint("返回调音器并使用这个目标音")
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: "应用目标音"))
             }
         }
         .navigationTitle("钢琴目标音")

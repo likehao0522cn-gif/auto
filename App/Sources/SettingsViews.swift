@@ -7,52 +7,58 @@ struct SettingsView: View {
                 NavigationLink {
                     TuningSettingsView()
                 } label: {
-                    Text("音高、容差和反馈")
+                    Text(verbatim: "音高、容差和反馈")
                 }
-                .accessibilityLabel("音高、容差和反馈")
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: "音高、容差和反馈"))
             }
 
             Section("声音") {
                 NavigationLink {
                     SoundSettingsView()
                 } label: {
-                    Text("参考音和语音")
+                    Text(verbatim: "参考音和语音")
                 }
-                .accessibilityLabel("参考音和语音")
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: "参考音和语音"))
             }
 
             Section("节拍器") {
                 NavigationLink {
                     MetronomeSettingsView()
                 } label: {
-                    Text("节拍器设置")
+                    Text(verbatim: "节拍器设置")
                 }
-                .accessibilityLabel("节拍器设置")
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: "节拍器设置"))
             }
 
             Section("无障碍") {
                 NavigationLink {
                     AccessibilitySettingsView()
                 } label: {
-                    Text("VoiceOver 和触觉")
+                    Text(verbatim: "旁白和触觉")
                 }
-                .accessibilityLabel("VoiceOver 和触觉")
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: "旁白和触觉"))
             }
 
             Section("其他") {
                 NavigationLink {
                     OtherSettingsView()
                 } label: {
-                    Text("语言、隐私和恢复默认")
+                    Text(verbatim: "语言、隐私和恢复默认")
                 }
-                .accessibilityLabel("语言、隐私和恢复默认")
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: "语言、隐私和恢复默认"))
 
                 NavigationLink {
                     DiagnosticsView()
                 } label: {
-                    Text("诊断")
+                    Text(verbatim: "诊断")
                 }
-                .accessibilityLabel("诊断")
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: "诊断"))
             }
         }
         .navigationTitle("设置")
@@ -70,42 +76,49 @@ struct TuningSettingsView: View {
                     in: 392...466,
                     step: 1
                 ) {
-                    Text("A4 \(Int(appModel.concertA)) Hz")
+                    Text(verbatim: "标准音高：\(Int(appModel.concertA)) 赫兹")
                 }
-                .accessibilityLabel("A4 标准音高")
-                .accessibilityValue("\(Int(appModel.concertA)) 赫兹")
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: "标准音高"))
+                .accessibilityValue(Text(verbatim: "\(Int(appModel.concertA)) 赫兹"))
             }
 
             Section("准音容差") {
-                Picker("准音容差", selection: $appModel.toleranceCents) {
-                    Text("±1 音分").tag(1.0)
-                    Text("±3 音分").tag(3.0)
-                    Text("±5 音分").tag(5.0)
+                Picker(selection: $appModel.toleranceCents) {
+                    Text(verbatim: "上下 1 音分").tag(1.0)
+                    Text(verbatim: "上下 3 音分").tag(3.0)
+                    Text(verbatim: "上下 5 音分").tag(5.0)
+                } label: {
+                    Text(verbatim: "准音容差")
                 }
                 .pickerStyle(.segmented)
-                .accessibilityLabel("准音容差")
+                .accessibilityLabel(Text(verbatim: "准音容差"))
             }
 
             Section("音名读法") {
-                Picker("音名读法", selection: $appModel.noteNamingStyle) {
+                Picker(selection: $appModel.noteNamingStyle) {
                     ForEach(NoteNamingStyle.allCases) { style in
-                        Text(style.title).tag(style)
+                        Text(verbatim: style.title).tag(style)
                     }
+                } label: {
+                    Text(verbatim: "音名读法")
                 }
                 .pickerStyle(.inline)
-                .accessibilityLabel("音名读法")
+                .accessibilityLabel(Text(verbatim: "音名读法"))
             }
 
             Section("自动更新反馈") {
-                Picker("自动更新反馈", selection: $appModel.autoUpdateFeedbackMode) {
+                Picker(selection: $appModel.autoUpdateFeedbackMode) {
                     ForEach(AutoUpdateFeedbackMode.allCases) { mode in
-                        Text(mode.title).tag(mode)
+                        Text(verbatim: mode.title).tag(mode)
                     }
+                } label: {
+                    Text(verbatim: "自动更新反馈")
                 }
                 .pickerStyle(.inline)
-                .accessibilityLabel("自动更新反馈")
+                .accessibilityLabel(Text(verbatim: "自动更新反馈"))
 
-                Text("首次检测结果始终播报完整音名和音分。")
+                Text(verbatim: "首次检测结果始终播报完整音名和音分。")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -120,17 +133,19 @@ struct SoundSettingsView: View {
     var body: some View {
         Form {
             Section("参考音音色") {
-                Picker("参考音音色", selection: $appModel.referenceToneTimbre) {
+                Picker(selection: $appModel.referenceToneTimbre) {
                     ForEach(ReferenceToneTimbre.allCases) { timbre in
-                        Text(timbre.title).tag(timbre)
+                        Text(verbatim: timbre.title).tag(timbre)
                     }
+                } label: {
+                    Text(verbatim: "参考音音色")
                 }
                 .pickerStyle(.inline)
-                .accessibilityLabel("参考音音色")
+                .accessibilityLabel(Text(verbatim: "参考音音色"))
             }
 
             Section {
-                Text("提示音和语音会尽量保持简短，避免遮住乐器声。")
+                Text(verbatim: "提示音和语音会尽量保持简短，避免遮住乐器声。")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -157,14 +172,18 @@ struct MetronomeSettingsView: View {
                 NavigationLink {
                     MetronomeSoundSettingsView()
                 } label: {
-                    Text("音色和触觉")
+                    Text(verbatim: "音色和触觉")
                 }
-                .accessibilityLabel("音色和触觉")
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: "音色和触觉"))
 
-                Button("恢复节拍器默认设置", role: .destructive) {
+                Button(role: .destructive) {
                     metronome.resetDefaults()
+                } label: {
+                    Text(verbatim: "恢复节拍器默认设置")
                 }
-                .accessibilityHint("恢复 120 BPM、4/4、第一拍重音和清脆点击音")
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: "恢复节拍器默认设置"))
             }
         }
         .navigationTitle("节拍器设置")
@@ -174,16 +193,16 @@ struct MetronomeSettingsView: View {
 struct AccessibilitySettingsView: View {
     var body: some View {
         Form {
-            Section("VoiceOver") {
-                Text("所有主要操作都可以通过 VoiceOver 完成。调音器会优先朗读当前结果，节拍器会优先朗读播放状态和速度。")
+            Section("旁白") {
+                Text(verbatim: "所有主要操作都可以通过旁白完成。调音器会优先朗读当前结果，节拍器会优先朗读播放状态和速度。")
             }
 
             Section("转子") {
-                Text("建议使用 VoiceOver 转子快速切换检测模式、乐器、弦位和节拍器设置。")
+                Text(verbatim: "建议使用旁白转子快速切换检测模式、乐器、弦位和节拍器设置。")
             }
 
             Section("盲文显示器") {
-                Text("所有按钮和状态都提供文字标签，盲文显示器可以读取当前结果和播放状态。")
+                Text(verbatim: "所有按钮和状态都提供文字标签，盲文显示器可以读取当前结果和播放状态。")
             }
         }
         .navigationTitle("无障碍设置")
@@ -196,34 +215,41 @@ struct OtherSettingsView: View {
     var body: some View {
         Form {
             Section("语言") {
-                Picker("界面语言", selection: $appModel.language) {
+                Picker(selection: $appModel.language) {
                     ForEach(AppLanguage.allCases) { language in
-                        Text(language.title)
+                        Text(verbatim: language.title)
                             .tag(language)
                             .disabled(!language.isAvailable)
                     }
+                } label: {
+                    Text(verbatim: "界面语言")
                 }
                 .pickerStyle(.inline)
+                .accessibilityLabel(Text(verbatim: "界面语言"))
 
-                Text("英文界面和英文语音尚未完成，当前版本使用中文。")
+                Text(verbatim: "英文界面和英文语音尚未完成，当前版本只提供中文。")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
 
             Section("隐私") {
-                Text("调音节拍器不录音、不上传音频。音高分析在设备本地完成。")
+                Text(verbatim: "调音节拍器不录音、不上传音频。音高分析在设备本地完成。")
             }
 
             Section("测速") {
-                Toggle("拍点触觉反馈", isOn: $appModel.tapTempoHapticsEnabled)
-                    .accessibilityHint("关闭后，记录拍点时不产生触觉反馈")
+                Toggle(isOn: $appModel.tapTempoHapticsEnabled) {
+                    Text(verbatim: "拍点触觉反馈")
+                }
             }
 
             Section("恢复默认") {
-                Button("恢复默认设置", role: .destructive) {
+                Button(role: .destructive) {
                     appModel.restoreDefaults()
+                } label: {
+                    Text(verbatim: "恢复默认设置")
                 }
-                .accessibilityHint("把调音和声音设置恢复为初始值，不改变节拍器设置")
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: "恢复默认设置"))
             }
         }
         .navigationTitle("其他设置")

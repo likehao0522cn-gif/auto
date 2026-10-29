@@ -15,8 +15,8 @@ struct HelpView: View {
         ),
         HelpTopic(
             id: "voiceover",
-            title: "如何用 VoiceOver 调音",
-            body: "打开 VoiceOver 后，进入调音器会自动播报当前乐器、弦位和监听状态。左右滑动浏览控件，双击激活按钮；使用可调节控件上下滑动修改数值。当前结果会优先出现在焦点顺序中。"
+            title: "如何用旁白调音",
+            body: "打开旁白后，进入调音器会自动播报当前乐器、弦位和监听状态。左右滑动浏览控件，双击激活按钮；使用可调节控件上下滑动修改数值。当前结果会优先出现在焦点顺序中。"
         ),
         HelpTopic(
             id: "piano",
@@ -31,7 +31,7 @@ struct HelpView: View {
         HelpTopic(
             id: "faq",
             title: "常见问题",
-            body: "如果听不到结果，请确认麦克风权限已开启，并靠近乐器。没有检测到稳定音高时应用会保持安静，可以点击查询结果了解当前状态。电话或 Siri 中断后，节拍器需要重新点击开始。"
+            body: "如果听不到结果，请确认麦克风权限已开启，并靠近乐器。没有检测到稳定音高时应用会保持安静，可以点击查询结果了解当前状态。电话或语音助手中断后，节拍器需要重新点击开始。"
         )
     ]
 
@@ -40,10 +40,10 @@ struct HelpView: View {
             NavigationLink {
                 HelpArticleView(topic: topic)
             } label: {
-                Text(topic.title)
+                Text(verbatim: topic.title)
             }
-            .accessibilityLabel(topic.title)
-            .accessibilityHint("打开帮助文章")
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(verbatim: topic.title))
         }
         .navigationTitle("帮助")
     }
@@ -54,14 +54,13 @@ struct HelpArticleView: View {
 
     var body: some View {
         ScrollView {
-            Text(topic.body)
+            Text(verbatim: topic.body)
                 .font(.body)
                 .lineSpacing(6)
                 .padding()
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .navigationTitle(topic.title)
-        .accessibilityElement(children: .contain)
     }
 }
 
@@ -71,15 +70,20 @@ struct MetronomeHelpView: View {
     var body: some View {
         List {
             Section("播放状态") {
-                Text(metronome.isPlaying ? "节拍器仍在播放。" : "节拍器当前已停止。")
-                    .accessibilityLabel("播放状态")
-                    .accessibilityValue(metronome.isPlaying ? "正在播放" : "已停止")
+                Text(verbatim: metronome.isPlaying ? "节拍器仍在播放。" : "节拍器当前已停止。")
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(Text(verbatim: "播放状态"))
+                    .accessibilityValue(Text(verbatim: metronome.isPlaying ? "正在播放" : "已停止"))
             }
 
             Section {
-                NavigationLink("打开完整帮助") {
+                NavigationLink {
                     HelpView()
+                } label: {
+                    Text(verbatim: "打开完整帮助")
                 }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: "打开完整帮助"))
             }
         }
         .navigationTitle("节拍器帮助")

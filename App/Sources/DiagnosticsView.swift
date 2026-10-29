@@ -22,8 +22,8 @@ struct DiagnosticsView: View {
             Section("调音设置") {
                 diagnosticRow("乐器", value: appModel.selectedPreset.displayName)
                 diagnosticRow("弦位或目标音", value: appModel.selectedTargetDisplayName ?? "无")
-                diagnosticRow("A4", value: "\(Int(appModel.concertA)) Hz")
-                diagnosticRow("准音容差", value: "±\(Int(appModel.toleranceCents)) 音分")
+                diagnosticRow("标准音高", value: "\(Int(appModel.concertA)) 赫兹")
+                diagnosticRow("准音容差", value: "上下 \(Int(appModel.toleranceCents)) 音分")
                 diagnosticRow("音名读法", value: appModel.noteNamingStyle.title)
                 diagnosticRow("更新反馈", value: appModel.autoUpdateFeedbackMode.title)
                 diagnosticRow("参考音音色", value: appModel.referenceToneTimbre.title)
@@ -38,7 +38,7 @@ struct DiagnosticsView: View {
 
             Section("节拍器设置") {
                 diagnosticRow("播放状态", value: metronome.isPlaying ? "正在播放" : "已停止")
-                diagnosticRow("速度", value: "\(Int(metronome.configuration.bpm)) BPM")
+                diagnosticRow("速度", value: "每分钟 \(Int(metronome.configuration.bpm)) 拍")
                 diagnosticRow("拍号", value: metronome.configuration.timeSignature.id)
                 diagnosticRow("重音", value: metronome.configuration.accentMode.title)
                 diagnosticRow("细分拍", value: metronome.configuration.subdivision.title)
@@ -52,20 +52,20 @@ struct DiagnosticsView: View {
                     UIPasteboard.general.string = diagnosticText
                     didCopy = true
                 } label: {
-                    Text(didCopy ? "已复制诊断信息" : "复制诊断信息")
+                    Text(verbatim: didCopy ? "已复制诊断信息" : "复制诊断信息")
                 }
-                .accessibilityLabel(didCopy ? "已复制诊断信息" : "复制诊断信息")
-                .accessibilityHint("复制当前诊断信息，方便发送给开发者")
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: didCopy ? "已复制诊断信息" : "复制诊断信息"))
 
                 Button {
                     openSystemSettings()
                 } label: {
-                    Text("打开系统设置")
+                    Text(verbatim: "打开系统设置")
                 }
-                .accessibilityLabel("打开系统设置")
-                .accessibilityHint("打开系统设置，检查麦克风或声音权限")
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: "打开系统设置"))
 
-                Text("诊断信息不包含音频、Apple ID 或密码。")
+                Text(verbatim: "诊断信息不包含音频、苹果账号或密码。")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -76,8 +76,8 @@ struct DiagnosticsView: View {
     private func diagnosticRow(_ title: String, value: String) -> some View {
         LabeledContent(title, value: value)
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel(title)
-            .accessibilityValue(value)
+            .accessibilityLabel(Text(verbatim: title))
+            .accessibilityValue(Text(verbatim: value))
     }
 
     private var appVersion: String {
@@ -97,7 +97,7 @@ struct DiagnosticsView: View {
 
     private var sampleRateText: String {
         let rate = AVAudioSession.sharedInstance().sampleRate
-        return rate > 0 ? String(format: "%.0f Hz", rate) : "不可用"
+        return rate > 0 ? String(format: "%.0f 赫兹", rate) : "不可用"
     }
 
     private var audioInputText: String {
@@ -124,8 +124,8 @@ struct DiagnosticsView: View {
         采样率: \(sampleRateText)
         乐器: \(appModel.selectedPreset.displayName)
         弦位或目标音: \(appModel.selectedTargetDisplayName ?? "无")
-        A4: \(Int(appModel.concertA)) Hz
-        准音容差: ±\(Int(appModel.toleranceCents)) 音分
+        标准音高: \(Int(appModel.concertA)) 赫兹
+        准音容差: 上下 \(Int(appModel.toleranceCents)) 音分
         音名读法: \(appModel.noteNamingStyle.title)
         更新反馈: \(appModel.autoUpdateFeedbackMode.title)
         参考音音色: \(appModel.referenceToneTimbre.title)
@@ -134,7 +134,7 @@ struct DiagnosticsView: View {
         节拍器调度: 基于音频采样时间，暂无偏差数据
         最近错误: \(metronome.errorMessage ?? "无")
         节拍器播放状态: \(metronome.isPlaying ? "正在播放" : "已停止")
-        节拍器速度: \(Int(metronome.configuration.bpm)) BPM
+        节拍器速度: 每分钟 \(Int(metronome.configuration.bpm)) 拍
         拍号: \(metronome.configuration.timeSignature.id)
         重音: \(metronome.configuration.accentMode.title)
         细分拍: \(metronome.configuration.subdivision.title)

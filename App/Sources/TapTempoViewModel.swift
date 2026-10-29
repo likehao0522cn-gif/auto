@@ -26,7 +26,7 @@ final class TapTempoViewModel: ObservableObject {
             bpm = estimator.bpm
             if !announcedInitialResult, let bpm {
                 announcedInitialResult = true
-                speech.speak("速度 \(Int(bpm.rounded()))")
+                speech.speak("速度每分钟 \(Int(bpm.rounded())) 拍")
             }
         }
 

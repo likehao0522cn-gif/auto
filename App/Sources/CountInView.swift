@@ -7,15 +7,17 @@ struct CountInView: View {
     var body: some View {
         Form {
             Section("预备拍") {
-                Picker("预备拍", selection: $metronome.configuration.countInBars) {
+                Picker(selection: $metronome.configuration.countInBars) {
                     ForEach(CountInBars.allCases) { countIn in
-                        Text(countIn.title).tag(countIn)
+                        Text(verbatim: countIn.title).tag(countIn)
                     }
+                } label: {
+                    Text(verbatim: "预备拍")
                 }
                 .pickerStyle(.inline)
-                .accessibilityLabel("预备拍")
+                .accessibilityLabel(Text(verbatim: "预备拍"))
 
-                Text("预备拍会在正式播放前建立速度和拍感。")
+                Text(verbatim: "预备拍会在正式播放前建立速度和拍感。")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }

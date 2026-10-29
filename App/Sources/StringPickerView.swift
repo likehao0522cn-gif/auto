@@ -11,7 +11,7 @@ struct StringPickerView: View {
                 dismiss()
             } label: {
                 HStack {
-                    Text(appModel.displayName(for: string))
+                    Text(verbatim: appModel.displayName(for: string))
                     Spacer()
                     if string.id == appModel.selectedStringID {
                         Image(systemName: "checkmark")
@@ -19,9 +19,9 @@ struct StringPickerView: View {
                     }
                 }
             }
-            .accessibilityLabel(appModel.displayName(for: string))
-            .accessibilityValue(string.id == appModel.selectedStringID ? "已选择" : "未选择")
-            .accessibilityHint("双击选择这个弦位")
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(verbatim: appModel.displayName(for: string)))
+            .accessibilityValue(Text(verbatim: string.id == appModel.selectedStringID ? "已选择" : "未选择"))
         }
         .navigationTitle("选择弦位")
     }

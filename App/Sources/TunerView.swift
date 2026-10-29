@@ -11,22 +11,21 @@ struct TunerView: View {
     @State private var hasAppeared = false
     @State private var restartTask: Task<Void, Never>?
     @State private var isShowingHelp = false
-    @AccessibilityFocusState private var focusedSection: TunerAccessibilityFocus?
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 resultCard
-                    .accessibilityFocused($focusedSection, equals: .result)
 
-                Picker("检测模式", selection: $mode) {
+                Picker(selection: $mode) {
                     ForEach(DetectionMode.allCases) { mode in
-                        Text(mode.title).tag(mode)
+                        Text(verbatim: mode.title).tag(mode)
                     }
+                } label: {
+                    Text(verbatim: "检测模式")
                 }
                 .pickerStyle(.segmented)
-                .accessibilityLabel("检测模式")
-                .accessibilityFocused($focusedSection, equals: .mode)
+                .accessibilityLabel(Text(verbatim: "检测模式"))
 
                 VStack(spacing: 0) {
                     NavigationLink {
@@ -34,7 +33,8 @@ struct TunerView: View {
                     } label: {
                         selectorRow(title: "乐器", value: appModel.selectedPreset.displayName)
                     }
-                    .accessibilityFocused($focusedSection, equals: .instrument)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(Text(verbatim: "乐器：\(appModel.selectedPreset.displayName)"))
 
                     if !appModel.selectedPreset.strings.isEmpty {
                         Divider()
@@ -46,7 +46,8 @@ struct TunerView: View {
                                 value: appModel.selectedTargetDisplayName ?? "未选择"
                             )
                         }
-                        .accessibilityFocused($focusedSection, equals: .target)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(Text(verbatim: "弦位：\(appModel.selectedTargetDisplayName ?? "未选择")"))
                     } else if appModel.selectedPreset.isPiano {
                         Divider()
                         NavigationLink {
@@ -59,7 +60,8 @@ struct TunerView: View {
                                     : (appModel.selectedTargetDisplayName ?? "未选择")
                             )
                         }
-                        .accessibilityFocused($focusedSection, equals: .target)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(Text(verbatim: "目标音：\(mode == .automatic ? "自动识别" : (appModel.selectedTargetDisplayName ?? "未选择"))"))
                     }
                 }
                 .background(Color(uiColor: .secondarySystemGroupedBackground))
@@ -68,53 +70,39 @@ struct TunerView: View {
                 actionButtons
 
                 if let errorMessage = viewModel.errorMessage {
-                    Text(errorMessage)
+                    Text(verbatim: errorMessage)
                         .foregroundStyle(.red)
-                        .accessibilityLabel("错误")
-                        .accessibilityValue(errorMessage)
 
                     if viewModel.needsMicrophonePermission {
                         Button {
                             viewModel.retryMicrophonePermission()
                         } label: {
-                            Text("重新尝试聆听")
+                            Text(verbatim: "重新尝试聆听")
                                 .frame(maxWidth: .infinity, minHeight: 44)
                         }
-                        .accessibilityLabel("重新尝试聆听")
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(Text(verbatim: "重新尝试聆听"))
                         .buttonStyle(.bordered)
-                        .accessibilityHint("重新检查麦克风权限并开始聆听")
 
                         Button {
                             openSystemSettings()
                         } label: {
-                            Text("打开系统设置")
+                            Text(verbatim: "打开系统设置")
                                 .frame(maxWidth: .infinity, minHeight: 44)
                         }
-                        .accessibilityLabel("打开系统设置")
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(Text(verbatim: "打开系统设置"))
                         .buttonStyle(.borderedProminent)
-                        .accessibilityHint("打开系统设置，允许麦克风访问")
                     }
                 }
 
-                Text(viewModel.isListening ? "麦克风正在持续监听" : "麦克风未在监听")
+                Text(verbatim: viewModel.isListening ? "麦克风正在持续监听" : "麦克风未在监听")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
-                    .accessibilityLabel("监听状态")
-                    .accessibilityValue(viewModel.isListening ? "正在监听" : "未监听")
             }
             .padding()
         }
         .navigationTitle("调音器")
-        .accessibilityRotor("调音器快速导航") {
-            AccessibilityRotorEntry("当前结果", id: TunerAccessibilityFocus.result)
-            AccessibilityRotorEntry("检测模式", id: TunerAccessibilityFocus.mode)
-            AccessibilityRotorEntry("乐器", id: TunerAccessibilityFocus.instrument)
-            AccessibilityRotorEntry("弦位或目标音", id: TunerAccessibilityFocus.target)
-            AccessibilityRotorEntry("参考音", id: TunerAccessibilityFocus.reference)
-            AccessibilityRotorEntry("查询结果", id: TunerAccessibilityFocus.query)
-            AccessibilityRotorEntry("暂停或继续聆听", id: TunerAccessibilityFocus.listening)
-            AccessibilityRotorEntry("帮助", id: TunerAccessibilityFocus.help)
-        }
         .onAppear {
             restartTask?.cancel()
             hasAppeared = true
@@ -192,10 +180,13 @@ struct TunerView: View {
                 HelpView()
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
-                            Button("关闭") {
+                            Button {
                                 isShowingHelp = false
+                            } label: {
+                                Text(verbatim: "关闭")
                             }
-                            .accessibilityHint("关闭帮助并继续调音")
+                            .accessibilityElement(children: .ignore)
+                            .accessibilityLabel(Text(verbatim: "关闭帮助"))
                         }
                     }
             }
@@ -203,34 +194,33 @@ struct TunerView: View {
     }
 
     private var resultCard: some View {
-        VStack(spacing: 12) {
-            Text("当前结果")
+        VStack(alignment: .leading, spacing: 12) {
+            Text(verbatim: "当前结果")
                 .font(.headline)
                 .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
 
-            Text(resultText)
+            Text(verbatim: resultText)
                 .font(.system(size: 42, weight: .bold, design: .rounded))
                 .minimumScaleFactor(0.45)
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity, minHeight: 92)
+                .accessibilityLabel(Text(verbatim: "当前结果"))
+                .accessibilityValue(Text(verbatim: resultText))
 
-                if let liveReading = viewModel.liveReading {
-                    Text(String(format: "%.1f Hz", liveReading.frequency))
-                        .font(.subheadline.monospacedDigit())
-                        .foregroundStyle(.secondary)
-                        .accessibilityHidden(true)
-                }
+            if let liveReading = viewModel.liveReading {
+                Text(verbatim: String(format: "%.1f 赫兹", liveReading.frequency))
+                    .font(.subheadline.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+            }
         }
         .padding(20)
         .frame(maxWidth: .infinity)
         .background(Color(uiColor: .secondarySystemGroupedBackground))
         .clipShape(RoundedRectangle(cornerRadius: 24))
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("当前结果")
-        .accessibilityValue(resultText)
-        .accessibilityAddTraits(.updatesFrequently)
+        .accessibilityElement(children: .contain)
     }
 
     private var resultText: String {
@@ -245,23 +235,22 @@ struct TunerView: View {
             Button {
                 viewModel.playReferenceTone()
             } label: {
-                Text("播放参考音")
+                Text(verbatim: "播放参考音")
                     .frame(maxWidth: .infinity, minHeight: 44)
             }
-            .accessibilityLabel("播放参考音")
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(verbatim: "播放参考音"))
             .buttonStyle(.bordered)
-            .accessibilityHint("播放当前目标音，播放期间暂停音高分析")
-            .accessibilityFocused($focusedSection, equals: .reference)
 
             Button {
                 viewModel.queryResult()
             } label: {
-                Text("查询结果")
+                Text(verbatim: "查询结果")
                     .frame(maxWidth: .infinity, minHeight: 44)
             }
-            .accessibilityLabel("查询结果")
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(verbatim: "查询结果"))
             .buttonStyle(.bordered)
-            .accessibilityFocused($focusedSection, equals: .query)
 
             Button {
                 if viewModel.isPaused {
@@ -270,34 +259,32 @@ struct TunerView: View {
                     viewModel.pause()
                 }
             } label: {
-                Text(viewModel.isPaused ? "继续聆听" : "暂停聆听")
+                Text(verbatim: viewModel.isPaused ? "继续聆听" : "暂停聆听")
                     .frame(maxWidth: .infinity, minHeight: 44)
             }
-            .accessibilityLabel(viewModel.isPaused ? "继续聆听" : "暂停聆听")
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(verbatim: viewModel.isPaused ? "继续聆听" : "暂停聆听"))
             .buttonStyle(.borderedProminent)
-            .accessibilityHint(viewModel.isPaused ? "重新开始麦克风监听" : "释放麦克风并停止检测")
-            .accessibilityFocused($focusedSection, equals: .listening)
 
             Button {
                 viewModel.pauseForOverlay()
                 isShowingHelp = true
             } label: {
-                Text("帮助")
+                Text(verbatim: "帮助")
                     .frame(maxWidth: .infinity, minHeight: 44)
             }
-            .accessibilityLabel("帮助")
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(verbatim: "帮助"))
             .buttonStyle(.bordered)
-            .accessibilityHint("打开帮助时暂停聆听，返回后自动恢复")
-            .accessibilityFocused($focusedSection, equals: .help)
         }
     }
 
     private func selectorRow(title: String, value: String) -> some View {
         HStack {
-            Text(title)
+            Text(verbatim: title)
                 .foregroundStyle(.primary)
             Spacer()
-            Text(value)
+            Text(verbatim: value)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.trailing)
             Image(systemName: "chevron.right")
@@ -307,9 +294,8 @@ struct TunerView: View {
         }
         .padding()
         .contentShape(Rectangle())
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(title)：\(value)")
-        .accessibilityHint("双击打开选择")
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(verbatim: "\(title)：\(value)"))
     }
 
     private func scheduleRestart(announceEntry: Bool) {
@@ -339,16 +325,4 @@ struct TunerView: View {
             announceEntry: announceEntry
         )
     }
-}
-
-
-private enum TunerAccessibilityFocus: Hashable {
-    case result
-    case mode
-    case instrument
-    case target
-    case reference
-    case query
-    case listening
-    case help
 }

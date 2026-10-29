@@ -14,33 +14,39 @@ struct BeatSettingsView: View {
     var body: some View {
         Form {
             Section("拍号") {
-                Picker("拍号", selection: timeSignatureBinding) {
+                Picker(selection: timeSignatureBinding) {
                     ForEach(TimeSignature.presets) { signature in
-                        Text(signature.id).tag(signature)
+                        Text(verbatim: signature.id).tag(signature)
                     }
+                } label: {
+                    Text(verbatim: "拍号")
                 }
                 .pickerStyle(.inline)
-                .accessibilityLabel("拍号")
+                .accessibilityLabel(Text(verbatim: "拍号"))
             }
 
             Section("重音") {
-                Picker("重音", selection: $metronome.configuration.accentMode) {
+                Picker(selection: $metronome.configuration.accentMode) {
                     ForEach(AccentMode.allCases) { accent in
-                        Text(accent.title).tag(accent)
+                        Text(verbatim: accent.title).tag(accent)
                     }
+                } label: {
+                    Text(verbatim: "重音")
                 }
                 .pickerStyle(.inline)
-                .accessibilityLabel("重音")
+                .accessibilityLabel(Text(verbatim: "重音"))
             }
 
             Section("细分拍") {
-                Picker("细分拍", selection: $metronome.configuration.subdivision) {
+                Picker(selection: $metronome.configuration.subdivision) {
                     ForEach(Subdivision.allCases) { subdivision in
-                        Text(subdivision.title).tag(subdivision)
+                        Text(verbatim: subdivision.title).tag(subdivision)
                     }
+                } label: {
+                    Text(verbatim: "细分拍")
                 }
                 .pickerStyle(.inline)
-                .accessibilityLabel("细分拍")
+                .accessibilityLabel(Text(verbatim: "细分拍"))
             }
         }
         .navigationTitle("节拍设置")

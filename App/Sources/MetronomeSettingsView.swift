@@ -7,23 +7,25 @@ struct MetronomeSoundSettingsView: View {
     var body: some View {
         Form {
             Section("节拍器音色") {
-                Picker("节拍器音色", selection: $metronome.timbre) {
+                Picker(selection: $metronome.timbre) {
                     ForEach(MetronomeTimbre.allCases) { timbre in
-                        Text(timbre.title).tag(timbre)
+                        Text(verbatim: timbre.title).tag(timbre)
                     }
+                } label: {
+                    Text(verbatim: "节拍器音色")
                 }
                 .pickerStyle(.inline)
-                .accessibilityLabel("节拍器音色")
+                .accessibilityLabel(Text(verbatim: "节拍器音色"))
             }
 
             Section("触觉") {
-                Toggle("播放时使用触觉打拍", isOn: $metronome.hapticsEnabled)
-                    .accessibilityLabel("播放时使用触觉打拍")
-                    .accessibilityHint("开启后，节拍器播放期间会按当前拍号和细分拍产生震动")
+                Toggle(isOn: $metronome.hapticsEnabled) {
+                    Text(verbatim: "播放时使用触觉打拍")
+                }
             }
 
             Section {
-                Text("锁屏和后台播放时，触觉不保证持续可用；音频点击声始终是主要节拍提示。")
+                Text(verbatim: "锁屏和后台播放时，触觉不保证持续可用；音频点击声始终是主要节拍提示。")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }

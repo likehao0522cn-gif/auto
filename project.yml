@@ -1,6 +1,7 @@
 name: TuneMetronome
 options:
   bundleIdPrefix: com.shm06
+  developmentLanguage: zh-Hans
   deploymentTarget:
     iOS: "17.0"
   createIntermediateGroups: true
@@ -42,9 +43,12 @@ targets:
       path: App/Resources/Info.plist
       properties:
         CFBundleDisplayName: "调音节拍器（测试）"
-        CFBundleShortVersionString: "0.2.0"
-        CFBundleVersion: "2"
-        NSMicrophoneUsageDescription: "This app uses the microphone to detect instrument pitch. Audio is analyzed on device and is never recorded or uploaded."
+        CFBundleShortVersionString: "0.3.0"
+        CFBundleVersion: "3"
+        CFBundleDevelopmentRegion: "zh-Hans"
+        CFBundleLocalizations:
+          - zh-Hans
+        NSMicrophoneUsageDescription: "调音节拍器需要使用麦克风检测乐器音高。音频只在设备上分析，不会录音或上传。"
         UIBackgroundModes:
           - audio
         UILaunchScreen: {}
@@ -59,8 +63,8 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.shm06.TuneMetronome
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: App/Resources/Info.plist
-        MARKETING_VERSION: "0.2.0"
-        CURRENT_PROJECT_VERSION: "2"
+        MARKETING_VERSION: "0.3.0"
+        CURRENT_PROJECT_VERSION: "3"
         CODE_SIGN_STYLE: Automatic
 schemes:
   TuneMetronome:

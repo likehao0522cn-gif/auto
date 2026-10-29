@@ -2,127 +2,101 @@ import SwiftUI
 
 struct MetronomeView: View {
     @EnvironmentObject private var metronome: MetronomeViewModel
-    @AccessibilityFocusState private var focusedSection: MetronomeAccessibilityFocus?
 
     var body: some View {
         List {
             Section {
                 VStack(spacing: 8) {
-                    Text("\(Int(metronome.configuration.bpm))")
+                    Text(verbatim: "\(Int(metronome.configuration.bpm))")
                         .font(.system(size: 64, weight: .bold, design: .rounded))
                         .monospacedDigit()
-                    Text("BPM")
+                    Text(verbatim: "每分钟拍数")
                         .font(.headline)
                         .foregroundStyle(.secondary)
-                    Text(metronome.statusText)
+                    Text(verbatim: metronome.statusText)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel("速度")
-                .accessibilityValue("\(Int(metronome.configuration.bpm)) BPM，\(metronome.statusText)")
-                .accessibilityFocused($focusedSection, equals: .status)
+                .accessibilityLabel(Text(verbatim: "速度"))
+                .accessibilityValue(Text(verbatim: "每分钟 \(Int(metronome.configuration.bpm)) 拍，\(metronome.statusText)"))
 
                 Stepper(
                     value: $metronome.configuration.bpm,
                     in: 20...300,
                     step: 1
                 ) {
-                    Text("调整速度")
+                    Text(verbatim: "调整速度")
                 }
-                .accessibilityLabel("调整速度")
-                .accessibilityValue("\(Int(metronome.configuration.bpm)) BPM")
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: "调整速度"))
+                .accessibilityValue(Text(verbatim: "每分钟 \(Int(metronome.configuration.bpm)) 拍"))
 
                 Button {
                     metronome.toggle()
                 } label: {
-                    Text(metronome.isPlaying ? "停止" : "开始")
+                    Text(verbatim: metronome.isPlaying ? "停止" : "开始")
                         .font(.headline)
                         .frame(maxWidth: .infinity, minHeight: 52)
                 }
-                .accessibilityLabel(metronome.isPlaying ? "停止节拍器" : "开始节拍器")
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: metronome.isPlaying ? "停止节拍器" : "开始节拍器"))
                 .buttonStyle(.borderedProminent)
-                .accessibilityHint(metronome.isPlaying ? "停止节拍器" : "开始播放节拍器")
-                .accessibilityFocused($focusedSection, equals: .playback)
             }
 
             Section("节拍设置") {
                 NavigationLink {
                     MetronomeSoundSettingsView()
                 } label: {
-                    Text("音色和触觉")
+                    Text(verbatim: "音色和触觉")
                 }
-                .accessibilityLabel("音色和触觉")
-                .accessibilityFocused($focusedSection, equals: .soundSettings)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: "音色和触觉"))
 
                 NavigationLink {
                     BeatSettingsView()
                 } label: {
-                    Text("拍号、重音和细分拍")
+                    Text(verbatim: "拍号、重音和细分拍")
                 }
-                .accessibilityLabel("拍号、重音和细分拍")
-                .accessibilityFocused($focusedSection, equals: .beatSettings)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: "拍号、重音和细分拍"))
 
                 NavigationLink {
                     TapTempoView()
                 } label: {
-                    Text("测速")
+                    Text(verbatim: "测速")
                 }
-                .accessibilityLabel("测速")
-                .accessibilityFocused($focusedSection, equals: .tapTempo)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: "测速"))
 
                 NavigationLink {
                     CountInView()
                 } label: {
-                    Text("预备拍")
+                    Text(verbatim: "预备拍")
                 }
-                .accessibilityLabel("预备拍")
-                .accessibilityFocused($focusedSection, equals: .countIn)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: "预备拍"))
             }
 
             Section {
                 NavigationLink {
                     MetronomeHelpView()
                 } label: {
-                    Text("帮助")
+                    Text(verbatim: "帮助")
                 }
-                .accessibilityLabel("帮助")
-                .accessibilityFocused($focusedSection, equals: .help)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: "帮助"))
             }
 
             if let errorMessage = metronome.errorMessage {
-                Section {
-                    Text(errorMessage)
+                Section("错误") {
+                    Text(verbatim: errorMessage)
                         .foregroundStyle(.red)
-                        .accessibilityLabel("错误")
-                        .accessibilityValue(errorMessage)
                 }
             }
         }
         .navigationTitle("节拍器")
-        .accessibilityRotor("节拍器快速导航") {
-            AccessibilityRotorEntry("播放状态和速度", id: MetronomeAccessibilityFocus.status)
-            AccessibilityRotorEntry("开始或停止", id: MetronomeAccessibilityFocus.playback)
-            AccessibilityRotorEntry("音色和触觉", id: MetronomeAccessibilityFocus.soundSettings)
-            AccessibilityRotorEntry("节拍设置", id: MetronomeAccessibilityFocus.beatSettings)
-            AccessibilityRotorEntry("测速", id: MetronomeAccessibilityFocus.tapTempo)
-            AccessibilityRotorEntry("预备拍", id: MetronomeAccessibilityFocus.countIn)
-            AccessibilityRotorEntry("帮助", id: MetronomeAccessibilityFocus.help)
-        }
-        .accessibilityAction(named: "开始或停止") {
-            metronome.toggle()
-        }
     }
-}
-
-private enum MetronomeAccessibilityFocus: Hashable {
-    case status
-    case soundSettings
-    case playback
-    case beatSettings
-    case tapTempo
-    case countIn
-    case help
 }
