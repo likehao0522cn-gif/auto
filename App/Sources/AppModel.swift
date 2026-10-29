@@ -127,6 +127,18 @@ final class AppModel: ObservableObject {
         didSet { save() }
     }
 
+    @Published var speechRate: Double {
+        didSet { save() }
+    }
+
+    @Published var speechPitch: Double {
+        didSet { save() }
+    }
+
+    @Published var speechOutputMode: SpeechOutputMode {
+        didSet { save() }
+    }
+
     let presets: [InstrumentPreset] = PresetCatalog.all
 
     private let defaults: UserDefaults
@@ -154,6 +166,10 @@ final class AppModel: ObservableObject {
         ) ?? .simplifiedChinese
         self.language = storedLanguage.isAvailable ? storedLanguage : .simplifiedChinese
         self.tapTempoHapticsEnabled = defaults.object(forKey: Keys.tapTempoHapticsEnabled) as? Bool ?? true
+        let speechSettings = SpeechSettings.load(from: defaults)
+        self.speechRate = speechSettings.rate
+        self.speechPitch = speechSettings.pitch
+        self.speechOutputMode = speechSettings.outputMode
     }
 
     var selectedPreset: InstrumentPreset {
@@ -198,6 +214,14 @@ final class AppModel: ObservableObject {
         selectedStringID = string.id
     }
 
+    var speechSettings: SpeechSettings {
+        SpeechSettings(
+            rate: speechRate,
+            pitch: speechPitch,
+            outputMode: speechOutputMode
+        )
+    }
+
     func restoreDefaults() {
         selectedPresetID = PresetCatalog.guitar.id
         selectedStringID = PresetCatalog.guitar.strings.first?.id
@@ -209,6 +233,9 @@ final class AppModel: ObservableObject {
         referenceToneTimbre = .sine
         language = .simplifiedChinese
         tapTempoHapticsEnabled = true
+        speechRate = SpeechSettings.defaultRate
+        speechPitch = SpeechSettings.defaultPitch
+        speechOutputMode = .appVoice
     }
 
     private func save() {
@@ -222,6 +249,8 @@ final class AppModel: ObservableObject {
         defaults.set(referenceToneTimbre.rawValue, forKey: Keys.referenceToneTimbre)
         defaults.set(language.rawValue, forKey: Keys.language)
         defaults.set(tapTempoHapticsEnabled, forKey: Keys.tapTempoHapticsEnabled)
+        SpeechSettings(rate: speechRate, pitch: speechPitch, outputMode: speechOutputMode)
+            .save(to: defaults)
     }
 
     private enum Keys {

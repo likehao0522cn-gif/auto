@@ -43,8 +43,8 @@ targets:
       path: App/Resources/Info.plist
       properties:
         CFBundleDisplayName: "调音节拍器（测试）"
-        CFBundleShortVersionString: "0.3.0"
-        CFBundleVersion: "3"
+        CFBundleShortVersionString: "0.4.0"
+        CFBundleVersion: "4"
         CFBundleDevelopmentRegion: "zh-Hans"
         CFBundleLocalizations:
           - zh-Hans
@@ -63,8 +63,8 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.shm06.TuneMetronome
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: App/Resources/Info.plist
-        MARKETING_VERSION: "0.3.0"
-        CURRENT_PROJECT_VERSION: "3"
+        MARKETING_VERSION: "0.4.0"
+        CURRENT_PROJECT_VERSION: "4"
         CODE_SIGN_STYLE: Automatic
 schemes:
   TuneMetronome:
