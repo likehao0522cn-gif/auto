@@ -25,7 +25,7 @@ The codebase currently includes:
 
 GitHub Actions successfully builds the iOS app and runs 26 core tests:
 
-https://github.com/likehao0522cn-gif/auto/actions/runs/40804176824
+https://github.com/likehao0522cn-gif/auto/actions/runs/40051338829
 
 ## Install on a device without a paid Apple Developer account
 
