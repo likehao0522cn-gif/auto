@@ -41,9 +41,9 @@ targets:
     info:
       path: App/Resources/Info.plist
       properties:
-        CFBundleDisplayName: "Tune Metronome"
-        CFBundleShortVersionString: "0.1.0"
-        CFBundleVersion: "1"
+        CFBundleDisplayName: "调音节拍器（测试）"
+        CFBundleShortVersionString: "0.2.0"
+        CFBundleVersion: "2"
         NSMicrophoneUsageDescription: "This app uses the microphone to detect instrument pitch. Audio is analyzed on device and is never recorded or uploaded."
         UIBackgroundModes:
           - audio
@@ -59,8 +59,8 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.shm06.TuneMetronome
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: App/Resources/Info.plist
-        MARKETING_VERSION: "0.1.0"
-        CURRENT_PROJECT_VERSION: "1"
+        MARKETING_VERSION: "0.2.0"
+        CURRENT_PROJECT_VERSION: "2"
         CODE_SIGN_STYLE: Automatic
 schemes:
   TuneMetronome:

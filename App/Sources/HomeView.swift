@@ -29,48 +29,61 @@ struct HomeView: View {
                 NavigationLink {
                     TunerView()
                 } label: {
-                    Text("快速调音")
+                    Text(verbatim: "快速调音")
                 }
-                .accessibilityLabel("快速调音")
-                .accessibilityHint("使用上次的乐器和弦位，进入后自动开始聆听")
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: "快速调音"))
+                .accessibilityHint(Text(verbatim: "使用上次的乐器和弦位，进入后自动开始聆听"))
 
                 NavigationLink {
                     MetronomeView()
                 } label: {
-                    Text("快速节拍")
+                    Text(verbatim: "快速节拍")
                 }
-                .accessibilityLabel("快速节拍")
-                .accessibilityHint("使用上次的节拍器设置，不会自动播放")
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: "快速节拍"))
+                .accessibilityHint(Text(verbatim: "使用上次的节拍器设置，不会自动播放"))
             }
 
             Section("工具") {
                 NavigationLink {
                     TunerView()
                 } label: {
-                    Text("调音器")
+                    Text(verbatim: "调音器")
                 }
-                .accessibilityLabel("调音器")
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: "调音器"))
 
                 NavigationLink {
                     MetronomeView()
                 } label: {
-                    Text("节拍器")
+                    Text(verbatim: "节拍器")
                 }
-                .accessibilityLabel("节拍器")
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: "节拍器"))
 
                 NavigationLink {
                     HelpView()
                 } label: {
-                    Text("帮助")
+                    Text(verbatim: "帮助")
                 }
-                .accessibilityLabel("帮助")
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: "帮助"))
 
                 NavigationLink {
                     SettingsView()
                 } label: {
-                    Text("设置")
+                    Text(verbatim: "设置")
                 }
-                .accessibilityLabel("设置")
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: "设置"))
+            }
+
+            Section("版本") {
+                Text(verbatim: "无障碍测试版 2026-10-29")
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(Text(verbatim: "无障碍测试版，构建日期 2026 年 10 月 29 日"))
+                    .accessibilityIdentifier("ACCESSIBILITY_BUILD_2026_10_29")
             }
 
             Section("当前乐器") {
