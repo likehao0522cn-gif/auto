@@ -1,6 +1,6 @@
 # Implementation Status
 
-Updated: 2026-10-28
+Updated: 2026-10-29
 
 ## Implemented
 
@@ -43,7 +43,10 @@ Updated: 2026-10-28
 - Run: https://github.com/likehao0522cn-gif/auto/actions/runs/40163213296
 - 2026-10-27: GitHub Actions `iOS CI` completed successfully after tuner lifecycle and audio recovery changes.
 - Run: https://github.com/likehao0522cn-gif/auto/actions/runs/40492063037
-- Latest unsigned IPA was produced and downloaded locally to `artifacts/TuneMetronome-unsigned.ipa`.
+- 2026-10-29: GitHub Actions `iOS CI` completed successfully after stabilizing the multiple-pitch performance test and adding the accessibility build marker.
+- Run: https://github.com/likehao0522cn-gif/auto/actions/runs/40804176824
+- Latest verified unsigned IPA was downloaded locally to `artifacts/TuneMetronome-latest-d0d83c5.ipa` (SHA-256 `C02986740A5EE3094CC54179EE087C12E4E88F9C48B1053DCD3E0C03A60A4557`).
+- IPA metadata and main binary were checked for display name, version, bundle ID, build marker, and current Chinese UI strings.
 - SwiftPM and Xcode Simulator tests pass.
 - Unit test coverage: note and cent conversion, A4 calibration, instrument presets, pitch detection (low, mid, high, noise, performance), metronome timing, subdivisions, tap tempo, and tuning feedback.
 
