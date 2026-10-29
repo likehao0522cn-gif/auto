@@ -1,5 +1,8 @@
 name: iOS CI
 
+permissions:
+  contents: write
+
 on:
   push:
   pull_request:
@@ -123,3 +126,33 @@ jobs:
           name: TuneMetronome-unsigned
           path: unsigned-ipa/TuneMetronome-unsigned.ipa
           if-no-files-found: error
+
+      - name: Prepare SideStore source
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          cp unsigned-ipa/TuneMetronome-unsigned.ipa unsigned-ipa/TuneMetronome.ipa
+          SIZE=$(stat -f%z unsigned-ipa/TuneMetronome.ipa)
+          python3 scripts/generate_store_source.py "$VERSION" "$SIZE" docs/store/source.json
+
+      - name: Publish GitHub release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          NOTES="调音节拍器测试版 $VERSION"
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" unsigned-ipa/TuneMetronome.ipa docs/store/source.json docs/store/icon.png --clobber
+            gh release edit "$GITHUB_REF_NAME" --notes "$NOTES" --latest
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              unsigned-ipa/TuneMetronome.ipa \
+              docs/store/source.json \
+              docs/store/icon.png \
+              --title "调音节拍器 $VERSION" \
+              --notes "$NOTES" \
+              --latest
+          fi
