@@ -25,7 +25,7 @@ enum SpeechOutputMode: String, CaseIterable, Identifiable, Hashable {
         case .automatic:
             return "旁白开启时使用旁白声音和语速；旁白关闭时使用应用语音。"
         case .voiceOver:
-            return "使用系统旁白的声音和语速，应用内的语速和音调设置不生效。"
+            return "旁白开启时使用系统旁白的声音和语速；旁白关闭时自动改用应用语音。应用内的语速和音调设置在旁白播报时不生效。"
         }
     }
 }

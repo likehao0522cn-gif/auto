@@ -30,7 +30,7 @@ final class SpeechFeedback: NSObject, ObservableObject, AVSpeechSynthesizerDeleg
         case .automatic:
             shouldUseVoiceOver = UIAccessibility.isVoiceOverRunning
         case .voiceOver:
-            shouldUseVoiceOver = true
+            shouldUseVoiceOver = UIAccessibility.isVoiceOverRunning
         }
         if shouldUseVoiceOver {
             speakWithVoiceOver(text)

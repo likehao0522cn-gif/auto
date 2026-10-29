@@ -133,7 +133,7 @@ struct SoundSettingsView: View {
 
     var body: some View {
         Form {
-            Section("语音播报") {
+            Section("语音来源") {
                 Picker(selection: $appModel.speechOutputMode) {
                     ForEach(SpeechOutputMode.allCases) { mode in
                         Text(verbatim: mode.title).tag(mode)
@@ -155,9 +155,10 @@ struct SoundSettingsView: View {
                     in: SpeechSettings.minimumRate...SpeechSettings.maximumRate,
                     step: 0.05
                 ) {
-                    Text(verbatim: "语音速度：\(SpeechSettings.rateLabel(appModel.speechRate))")
+                    Text(verbatim: "语速：\(SpeechSettings.rateLabel(appModel.speechRate))")
                 }
-                .accessibilityLabel(Text(verbatim: "语音速度"))
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: "语音语速"))
                 .accessibilityValue(Text(verbatim: SpeechSettings.rateLabel(appModel.speechRate)))
 
                 Stepper(
@@ -165,14 +166,15 @@ struct SoundSettingsView: View {
                     in: SpeechSettings.minimumPitch...SpeechSettings.maximumPitch,
                     step: 0.05
                 ) {
-                    Text(verbatim: "语音音调：\(SpeechSettings.pitchLabel(appModel.speechPitch))")
+                    Text(verbatim: "音调：\(SpeechSettings.pitchLabel(appModel.speechPitch))")
                 }
+                .accessibilityElement(children: .ignore)
                 .accessibilityLabel(Text(verbatim: "语音音调"))
                 .accessibilityValue(Text(verbatim: SpeechSettings.pitchLabel(appModel.speechPitch)))
 
                 Button {
                     speechPreview.speak(
-                        "这是当前语音速度和音调。",
+                        "这是当前语音语速和音调。",
                         settings: appModel.speechSettings
                     )
                 } label: {
@@ -181,7 +183,7 @@ struct SoundSettingsView: View {
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(Text(verbatim: "试听当前语音"))
 
-                Text(verbatim: "语速和音调只影响应用语音；旁白播报使用系统旁白自己的声音和语速。")
+                Text(verbatim: "语速和音调只影响应用语音；选择旁白播报时，应用会使用系统旁白的语音和语速。")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
