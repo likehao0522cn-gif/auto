@@ -21,6 +21,14 @@ struct SettingsView: View {
                 }
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(Text(verbatim: "参考音和语音"))
+
+                NavigationLink {
+                    SpeechSettingsView()
+                } label: {
+                    Text(verbatim: "语音语速、音调和音量")
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: "语音语速、音调和音量"))
             }
 
             Section("节拍器") {
@@ -129,65 +137,9 @@ struct TuningSettingsView: View {
 
 struct SoundSettingsView: View {
     @EnvironmentObject private var appModel: AppModel
-    @StateObject private var speechPreview = SpeechFeedback()
 
     var body: some View {
         Form {
-            Section("语音来源") {
-                Picker(selection: $appModel.speechOutputMode) {
-                    ForEach(SpeechOutputMode.allCases) { mode in
-                        Text(verbatim: mode.title).tag(mode)
-                    }
-                } label: {
-                    Text(verbatim: "播报方式")
-                }
-                .pickerStyle(.inline)
-                .accessibilityLabel(Text(verbatim: "播报方式"))
-
-                Text(verbatim: appModel.speechOutputMode.detail)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-
-            Section("应用语音") {
-                Stepper(
-                    value: $appModel.speechRate,
-                    in: SpeechSettings.minimumRate...SpeechSettings.maximumRate,
-                    step: 0.05
-                ) {
-                    Text(verbatim: "语速：\(SpeechSettings.rateLabel(appModel.speechRate))")
-                }
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(Text(verbatim: "语音语速"))
-                .accessibilityValue(Text(verbatim: SpeechSettings.rateLabel(appModel.speechRate)))
-
-                Stepper(
-                    value: $appModel.speechPitch,
-                    in: SpeechSettings.minimumPitch...SpeechSettings.maximumPitch,
-                    step: 0.05
-                ) {
-                    Text(verbatim: "音调：\(SpeechSettings.pitchLabel(appModel.speechPitch))")
-                }
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(Text(verbatim: "语音音调"))
-                .accessibilityValue(Text(verbatim: SpeechSettings.pitchLabel(appModel.speechPitch)))
-
-                Button {
-                    speechPreview.speak(
-                        "这是当前语音语速和音调。",
-                        settings: appModel.speechSettings
-                    )
-                } label: {
-                    Text(verbatim: "试听当前语音")
-                }
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(Text(verbatim: "试听当前语音"))
-
-                Text(verbatim: "语速和音调只影响应用语音；选择旁白播报时，应用会使用系统旁白的语音和语速。")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-
             Section("参考音音色") {
                 Picker(selection: $appModel.referenceToneTimbre) {
                     ForEach(ReferenceToneTimbre.allCases) { timbre in
@@ -243,6 +195,82 @@ struct MetronomeSettingsView: View {
             }
         }
         .navigationTitle("节拍器设置")
+    }
+}
+
+struct SpeechSettingsView: View {
+    @EnvironmentObject private var appModel: AppModel
+    @StateObject private var speechPreview = SpeechFeedback()
+
+    var body: some View {
+        Form {
+            Section("语音来源") {
+                Picker(selection: $appModel.speechOutputMode) {
+                    ForEach(SpeechOutputMode.allCases) { mode in
+                        Text(verbatim: mode.title).tag(mode)
+                    }
+                } label: {
+                    Text(verbatim: "播报方式")
+                }
+                .pickerStyle(.inline)
+                .accessibilityLabel(Text(verbatim: "播报方式"))
+
+                Text(verbatim: appModel.speechOutputMode.detail)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section("应用语音") {
+                Stepper(
+                    value: $appModel.speechRate,
+                    in: SpeechSettings.minimumRate...SpeechSettings.maximumRate,
+                    step: 0.05
+                ) {
+                    Text(verbatim: "语速：\(SpeechSettings.rateLabel(appModel.speechRate))")
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: "语音语速"))
+                .accessibilityValue(Text(verbatim: SpeechSettings.rateLabel(appModel.speechRate)))
+
+                Stepper(
+                    value: $appModel.speechPitch,
+                    in: SpeechSettings.minimumPitch...SpeechSettings.maximumPitch,
+                    step: 0.05
+                ) {
+                    Text(verbatim: "音调：\(SpeechSettings.pitchLabel(appModel.speechPitch))")
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: "语音音调"))
+                .accessibilityValue(Text(verbatim: SpeechSettings.pitchLabel(appModel.speechPitch)))
+
+                Stepper(
+                    value: $appModel.speechVolume,
+                    in: SpeechSettings.minimumVolume...SpeechSettings.maximumVolume,
+                    step: 0.1
+                ) {
+                    Text(verbatim: "音量：\(SpeechSettings.volumeLabel(appModel.speechVolume))")
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: "语音音量"))
+                .accessibilityValue(Text(verbatim: SpeechSettings.volumeLabel(appModel.speechVolume)))
+
+                Button {
+                    speechPreview.speak(
+                        "这是当前语音语速、音调和音量。",
+                        settings: appModel.speechSettings
+                    )
+                } label: {
+                    Text(verbatim: "试听当前语音")
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: "试听当前语音"))
+
+                Text(verbatim: "语速、音调和音量只影响应用语音；选择旁白播报时，应用会使用系统旁白的语音和语速。")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .navigationTitle("语音设置")
     }
 }
 

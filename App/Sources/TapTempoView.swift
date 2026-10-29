@@ -23,6 +23,7 @@ struct TapTempoView: View {
             ZStack {
                 RoundedRectangle(cornerRadius: 24)
                     .fill(Color(uiColor: .secondarySystemGroupedBackground))
+                    .accessibilityHidden(true)
                 VStack(spacing: 10) {
                     Image(systemName: "hand.tap.fill")
                         .font(.system(size: 42))
@@ -32,16 +33,14 @@ struct TapTempoView: View {
                     Text(verbatim: "连续单击记录拍点")
                         .foregroundStyle(.secondary)
                 }
+                .accessibilityHidden(true)
+                TapTempoPad(tapCount: viewModel.tapCount) {
+                    viewModel.tap(hapticsEnabled: appModel.tapTempoHapticsEnabled)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .frame(maxWidth: .infinity, minHeight: 260)
+            .frame(maxWidth: .infinity, minHeight: 260, maxHeight: .infinity)
             .contentShape(RoundedRectangle(cornerRadius: 24))
-            .onTapGesture {
-                viewModel.tap(hapticsEnabled: appModel.tapTempoHapticsEnabled)
-            }
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(Text(verbatim: "测速区域"))
-            .accessibilityValue(Text(verbatim: "已记录 \(viewModel.tapCount) 拍"))
-            .accessibilityAddTraits(.allowsDirectInteraction)
 
             Text(verbatim: "已记录 \(viewModel.tapCount) 拍")
                 .foregroundStyle(.secondary)
@@ -87,7 +86,8 @@ struct TapTempoView: View {
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }
-        .padding()
+        .padding(.horizontal)
+        .padding(.top)
         .navigationTitle("测速")
         .onAppear {
             volumeButtons.start {

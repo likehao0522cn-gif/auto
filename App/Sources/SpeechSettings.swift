@@ -33,37 +33,50 @@ enum SpeechOutputMode: String, CaseIterable, Identifiable, Hashable {
 struct SpeechSettings {
     static let defaultRate = 0.48
     static let defaultPitch = 1.0
+    static let defaultVolume = 1.0
     static let minimumRate = 0.30
     static let maximumRate = 0.70
     static let minimumPitch = 0.80
     static let maximumPitch = 1.20
+    static let minimumVolume = 0.20
+    static let maximumVolume = 1.0
 
     var rate: Double
     var pitch: Double
+    var volume: Double
     var outputMode: SpeechOutputMode
 
     init(
         rate: Double = SpeechSettings.defaultRate,
         pitch: Double = SpeechSettings.defaultPitch,
+        volume: Double = SpeechSettings.defaultVolume,
         outputMode: SpeechOutputMode = .appVoice
     ) {
         self.rate = min(Self.maximumRate, max(Self.minimumRate, rate))
         self.pitch = min(Self.maximumPitch, max(Self.minimumPitch, pitch))
+        self.volume = min(Self.maximumVolume, max(Self.minimumVolume, volume))
         self.outputMode = outputMode
     }
 
     static func load(from defaults: UserDefaults = .standard) -> SpeechSettings {
         let storedRate = defaults.object(forKey: Keys.rate) as? Double ?? defaultRate
         let storedPitch = defaults.object(forKey: Keys.pitch) as? Double ?? defaultPitch
+        let storedVolume = defaults.object(forKey: Keys.volume) as? Double ?? defaultVolume
         let storedMode = SpeechOutputMode(
             rawValue: defaults.string(forKey: Keys.outputMode) ?? ""
         ) ?? .appVoice
-        return SpeechSettings(rate: storedRate, pitch: storedPitch, outputMode: storedMode)
+        return SpeechSettings(
+            rate: storedRate,
+            pitch: storedPitch,
+            volume: storedVolume,
+            outputMode: storedMode
+        )
     }
 
     func save(to defaults: UserDefaults = .standard) {
         defaults.set(rate, forKey: Keys.rate)
         defaults.set(pitch, forKey: Keys.pitch)
+        defaults.set(volume, forKey: Keys.volume)
         defaults.set(outputMode.rawValue, forKey: Keys.outputMode)
     }
 
@@ -93,9 +106,15 @@ struct SpeechSettings {
         return "\(descriptor)，\(String(format: "%.2f", clamped))"
     }
 
+    static func volumeLabel(_ volume: Double) -> String {
+        let clamped = min(maximumVolume, max(minimumVolume, volume))
+        return "\(Int((clamped * 100).rounded()))%"
+    }
+
     private enum Keys {
         static let rate = "speechRate"
         static let pitch = "speechPitch"
+        static let volume = "speechVolume"
         static let outputMode = "speechOutputMode"
     }
 }

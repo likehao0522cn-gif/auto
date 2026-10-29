@@ -135,6 +135,10 @@ final class AppModel: ObservableObject {
         didSet { save() }
     }
 
+    @Published var speechVolume: Double {
+        didSet { save() }
+    }
+
     @Published var speechOutputMode: SpeechOutputMode {
         didSet { save() }
     }
@@ -169,6 +173,7 @@ final class AppModel: ObservableObject {
         let speechSettings = SpeechSettings.load(from: defaults)
         self.speechRate = speechSettings.rate
         self.speechPitch = speechSettings.pitch
+        self.speechVolume = speechSettings.volume
         self.speechOutputMode = speechSettings.outputMode
     }
 
@@ -218,6 +223,7 @@ final class AppModel: ObservableObject {
         SpeechSettings(
             rate: speechRate,
             pitch: speechPitch,
+            volume: speechVolume,
             outputMode: speechOutputMode
         )
     }
@@ -235,6 +241,7 @@ final class AppModel: ObservableObject {
         tapTempoHapticsEnabled = true
         speechRate = SpeechSettings.defaultRate
         speechPitch = SpeechSettings.defaultPitch
+        speechVolume = SpeechSettings.defaultVolume
         speechOutputMode = .appVoice
     }
 
@@ -249,7 +256,12 @@ final class AppModel: ObservableObject {
         defaults.set(referenceToneTimbre.rawValue, forKey: Keys.referenceToneTimbre)
         defaults.set(language.rawValue, forKey: Keys.language)
         defaults.set(tapTempoHapticsEnabled, forKey: Keys.tapTempoHapticsEnabled)
-        SpeechSettings(rate: speechRate, pitch: speechPitch, outputMode: speechOutputMode)
+        SpeechSettings(
+            rate: speechRate,
+            pitch: speechPitch,
+            volume: speechVolume,
+            outputMode: speechOutputMode
+        )
             .save(to: defaults)
     }
 

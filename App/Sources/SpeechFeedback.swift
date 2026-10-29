@@ -40,7 +40,7 @@ final class SpeechFeedback: NSObject, ObservableObject, AVSpeechSynthesizerDeleg
         utterance.voice = AVSpeechSynthesisVoice(language: language)
         utterance.rate = Float(settings.rate)
         utterance.pitchMultiplier = Float(settings.pitch)
-        utterance.volume = 1.0
+        utterance.volume = Float(settings.volume)
         synthesizer.speak(utterance)
     }
 
