@@ -9,3 +9,4 @@ xcuserdata/
 *.xcworkspace
 
 artifacts/
+sideloadlydaemon.log

@@ -156,3 +156,20 @@ jobs:
               --notes "$NOTES" \
               --latest
           fi
+
+      - name: Set up Node.js for release verification
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Verify published SideStore source
+        if: startsWith(github.ref, 'refs/tags/v')
+        timeout-minutes: 10
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node scripts/verify-store-release.mjs \
+            "$GITHUB_REF_NAME" \
+            "$GITHUB_REPOSITORY" \
+            --wait-seconds 120
