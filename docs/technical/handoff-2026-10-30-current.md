@@ -18,8 +18,10 @@
 ## 2. 分支与发布状态
 
 - 分支：`fix/tuner-lifecycle`
-- 上一个已确认提交：`d215579 Add-current-session-handoff`
-- 远端同名分支曾成功推送；本次新增的发布校验提交和本交接提交需要再次推送。
+- 已推送提交：`7fe7480 Verify-published-sidestore-release`
+- 该提交的 CI Run `40987660763` 已成功：
+  - `https://github.com/likehao0522cn-gif/auto/actions/runs/40987660763`
+- 本交接文档的后续修订只改文档，不再影响应用构建。
 - 标签：`v0.5.0`，已推送到远端。
 - Release：`v0.5.0`，已发布且为 Latest。
 - Release 页面：`https://github.com/likehao0522cn-gif/auto/releases/tag/v0.5.0`
@@ -72,7 +74,7 @@ CI 在标签发布并创建 Release 后会自动检查：
 node scripts/verify-store-release.mjs v0.5.0 likehao0522cn-gif/auto
 ```
 
-该命令已对 v0.5.0 实际运行通过。
+该命令已对 v0.5.0 实际运行通过。当前电脑访问 GitHub 下载资产偶尔会超时，脚本会重试；CI 在 GitHub 网络内运行，通常更稳定。
 
 ## 5. 下一步：首次 SideStore 安装
 
