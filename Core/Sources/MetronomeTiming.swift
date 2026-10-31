@@ -1,5 +1,33 @@
 import Foundation
 
+public enum MetronomeTempo {
+    public static let minimumBPM = 20
+    public static let maximumBPM = 300
+    public static let validBPMRange: ClosedRange<Double> = 20...300
+
+    public static func clampedBPM(_ bpm: Double) -> Double {
+        min(validBPMRange.upperBound, max(validBPMRange.lowerBound, bpm.rounded()))
+    }
+}
+
+public enum BPMInputError: Error, Equatable, Sendable {
+    case empty
+    case notAnInteger
+    case outOfRange
+}
+
+public enum BPMInput {
+    public static func parse(_ text: String) -> Result<Int, BPMInputError> {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return .failure(.empty) }
+        guard let bpm = Int(trimmed) else { return .failure(.notAnInteger) }
+        guard (MetronomeTempo.minimumBPM...MetronomeTempo.maximumBPM).contains(bpm) else {
+            return .failure(.outOfRange)
+        }
+        return .success(bpm)
+    }
+}
+
 public struct TimeSignature: Identifiable, Hashable, Sendable, CustomStringConvertible {
     public let numerator: Int
     public let denominator: Int

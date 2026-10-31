@@ -34,7 +34,7 @@ struct TapTempoView: View {
                         .foregroundStyle(.secondary)
                 }
                 .accessibilityHidden(true)
-                TapTempoPad(tapCount: viewModel.tapCount) {
+                TapTempoPad(tapCount: viewModel.tapCount, bpm: viewModel.bpm) {
                     viewModel.tap(hapticsEnabled: appModel.tapTempoHapticsEnabled)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

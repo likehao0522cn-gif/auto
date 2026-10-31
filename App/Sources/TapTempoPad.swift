@@ -3,6 +3,7 @@ import UIKit
 
 struct TapTempoPad: UIViewRepresentable {
     let tapCount: Int
+    let bpm: Double?
     let onTap: () -> Void
 
     func makeCoordinator() -> Coordinator {
@@ -23,7 +24,11 @@ struct TapTempoPad: UIViewRepresentable {
 
     func updateUIView(_ uiView: TapPadUIView, context: Context) {
         context.coordinator.onTap = onTap
-        uiView.accessibilityValue = "已记录 \(tapCount) 拍"
+        if let bpm {
+            uiView.accessibilityValue = "已记录 \(tapCount) 拍，每分钟 \(Int(bpm.rounded())) 拍"
+        } else {
+            uiView.accessibilityValue = "已记录 \(tapCount) 拍"
+        }
     }
 
     final class Coordinator {

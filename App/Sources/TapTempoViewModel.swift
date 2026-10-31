@@ -12,6 +12,7 @@ final class TapTempoViewModel: ObservableObject {
     private var estimator = TapTempoEstimator()
     private var resetTask: Task<Void, Never>?
     private var announcedInitialResult = false
+    private var lastAnnouncedRoundedBPM: Int?
     private let speech = SpeechFeedback()
     private let audioEngine = TapTempoAudioEngine()
 
@@ -22,12 +23,21 @@ final class TapTempoViewModel: ObservableObject {
     func tap(hapticsEnabled: Bool = true) {
         estimator.record(at: Date.timeIntervalSinceReferenceDate)
         tapCount = estimator.timestamps.count
-        if estimator.hasEnoughTapsForInitialEstimate {
-            bpm = estimator.bpm
-            if !announcedInitialResult, let bpm {
+        let newBPM = estimator.hasEnoughTapsForInitialEstimate ? estimator.bpm : nil
+        bpm = newBPM
+        if let newBPM {
+            let roundedBPM = Int(newBPM.rounded())
+            if !announcedInitialResult {
                 announcedInitialResult = true
-                speech.speak("速度每分钟 \(Int(bpm.rounded())) 拍")
+                lastAnnouncedRoundedBPM = roundedBPM
+                speech.speak("速度每分钟 \(roundedBPM) 拍")
+            } else if lastAnnouncedRoundedBPM != roundedBPM {
+                lastAnnouncedRoundedBPM = roundedBPM
+                speech.speak("\(roundedBPM) 拍")
             }
+        } else {
+            announcedInitialResult = false
+            lastAnnouncedRoundedBPM = nil
         }
 
         if hapticsEnabled {
@@ -51,6 +61,7 @@ final class TapTempoViewModel: ObservableObject {
         bpm = nil
         tapCount = 0
         announcedInitialResult = false
+        lastAnnouncedRoundedBPM = nil
     }
 }
 

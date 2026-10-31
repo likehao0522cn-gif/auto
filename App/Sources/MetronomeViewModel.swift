@@ -58,7 +58,7 @@ final class MetronomeViewModel: ObservableObject {
         let subdivision = Subdivision(rawValue: defaults.integer(forKey: Keys.subdivision)) ?? .none
         let countIn = CountInBars(rawValue: defaults.integer(forKey: Keys.countIn)) ?? .off
         self.configuration = MetronomeConfiguration(
-            bpm: bpm,
+            bpm: MetronomeTempo.clampedBPM(bpm),
             timeSignature: signature,
             accentMode: accent,
             subdivision: subdivision,
@@ -112,13 +112,17 @@ final class MetronomeViewModel: ObservableObject {
     }
 
     func applyTapTempo(_ bpm: Double) {
-        let clamped = min(300, max(20, bpm.rounded()))
-        configuration.bpm = clamped
-        speak("速度设为每分钟 \(Int(clamped)) 拍")
+        setBPM(bpm)
+        speak("速度设为每分钟 \(Int(configuration.bpm)) 拍")
+    }
+
+    func applyManualBPM(_ bpm: Double) {
+        setBPM(bpm)
+        speak("速度已设为每分钟 \(Int(configuration.bpm)) 拍")
     }
 
     func setBPM(_ bpm: Double) {
-        configuration.bpm = min(300, max(20, bpm.rounded()))
+        configuration.bpm = MetronomeTempo.clampedBPM(bpm)
     }
 
     func resetDefaults() {
