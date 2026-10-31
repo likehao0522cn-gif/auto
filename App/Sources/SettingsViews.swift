@@ -79,16 +79,13 @@ struct TuningSettingsView: View {
     var body: some View {
         Form {
             Section("标准音高") {
-                Stepper(
+                AdjustableValueRow(
+                    title: "标准音高",
                     value: $appModel.concertA,
-                    in: 392...466,
-                    step: 1
-                ) {
-                    Text(verbatim: "标准音高：\(Int(appModel.concertA)) 赫兹")
-                }
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(Text(verbatim: "标准音高"))
-                .accessibilityValue(Text(verbatim: "\(Int(appModel.concertA)) 赫兹"))
+                    range: 392...466,
+                    step: 1,
+                    valueLabel: { "\(Int($0)) 赫兹" }
+                )
             }
 
             Section("准音容差") {
@@ -221,38 +218,29 @@ struct SpeechSettingsView: View {
             }
 
             Section("应用语音") {
-                Stepper(
+                AdjustableValueRow(
+                    title: "语音语速",
                     value: $appModel.speechRate,
-                    in: SpeechSettings.minimumRate...SpeechSettings.maximumRate,
-                    step: 0.05
-                ) {
-                    Text(verbatim: "语速：\(SpeechSettings.rateLabel(appModel.speechRate))")
-                }
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(Text(verbatim: "语音语速"))
-                .accessibilityValue(Text(verbatim: SpeechSettings.rateLabel(appModel.speechRate)))
+                    range: SpeechSettings.minimumRate...SpeechSettings.maximumRate,
+                    step: 0.05,
+                    valueLabel: { SpeechSettings.rateLabel($0) }
+                )
 
-                Stepper(
+                AdjustableValueRow(
+                    title: "语音音调",
                     value: $appModel.speechPitch,
-                    in: SpeechSettings.minimumPitch...SpeechSettings.maximumPitch,
-                    step: 0.05
-                ) {
-                    Text(verbatim: "音调：\(SpeechSettings.pitchLabel(appModel.speechPitch))")
-                }
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(Text(verbatim: "语音音调"))
-                .accessibilityValue(Text(verbatim: SpeechSettings.pitchLabel(appModel.speechPitch)))
+                    range: SpeechSettings.minimumPitch...SpeechSettings.maximumPitch,
+                    step: 0.05,
+                    valueLabel: { SpeechSettings.pitchLabel($0) }
+                )
 
-                Stepper(
+                AdjustableValueRow(
+                    title: "语音音量",
                     value: $appModel.speechVolume,
-                    in: SpeechSettings.minimumVolume...SpeechSettings.maximumVolume,
-                    step: 0.1
-                ) {
-                    Text(verbatim: "音量：\(SpeechSettings.volumeLabel(appModel.speechVolume))")
-                }
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(Text(verbatim: "语音音量"))
-                .accessibilityValue(Text(verbatim: SpeechSettings.volumeLabel(appModel.speechVolume)))
+                    range: SpeechSettings.minimumVolume...SpeechSettings.maximumVolume,
+                    step: 0.1,
+                    valueLabel: { SpeechSettings.volumeLabel($0) }
+                )
 
                 Button {
                     speechPreview.speak(

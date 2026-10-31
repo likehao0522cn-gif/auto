@@ -35,6 +35,7 @@ Updated: 2026-10-29
 - Metronome haptics follow the audio player's rendered time instead of accumulating timer drift
 - Core unit tests
 - GitHub Actions macOS build and test workflow
+- 可调节数值统一使用大号“减 / 加”按钮：语音语速、语音音调、语音音量、标准音高和节拍器速度。
 - XcodeGen project configuration
 
 ## Verified
@@ -63,6 +64,13 @@ Updated: 2026-10-29
 - Piano bass accuracy and real instrument timbres are not verified.
 - Guzheng and pipa string data still need final review.
 - App icon, final product name, and App Store configuration are not complete.
+
+## 2026-10-31 本地待验证改动
+
+- 新增 `App/Sources/AdjustableValueRow.swift`。
+- 语音语速、音调、音量、标准音高和节拍器速度改为大号“减 / 加”按钮。
+- 每个加减按钮都有独立中文旁白标签；到达边界时按钮禁用；旁白开启时调整后播报新值。
+- 上述改动尚未经过 GitHub Actions 构建和真机 VoiceOver 验证，也尚未推送。
 
 ## Next Milestones
 

@@ -23,16 +23,13 @@ struct MetronomeView: View {
                 .accessibilityLabel(Text(verbatim: "速度"))
                 .accessibilityValue(Text(verbatim: "每分钟 \(Int(metronome.configuration.bpm)) 拍，\(metronome.statusText)"))
 
-                Stepper(
+                AdjustableValueRow(
+                    title: "节拍器速度",
                     value: $metronome.configuration.bpm,
-                    in: 20...300,
-                    step: 1
-                ) {
-                    Text(verbatim: "调整速度")
-                }
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(Text(verbatim: "调整速度"))
-                .accessibilityValue(Text(verbatim: "每分钟 \(Int(metronome.configuration.bpm)) 拍"))
+                    range: 20...300,
+                    step: 1,
+                    valueLabel: { "每分钟 \(Int($0)) 拍" }
+                )
 
                 Button {
                     metronome.toggle()
