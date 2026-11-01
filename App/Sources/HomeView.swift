@@ -81,10 +81,10 @@ struct HomeView: View {
             }
 
             Section("版本") {
-                Text(verbatim: "语音和测速测试版 2026-10-29")
+                Text(verbatim: "0.6.0 手动输入与测速更新 2026-11-01")
                     .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(Text(verbatim: "语音和测速测试版，构建日期 2026 年 10 月 29 日"))
-                    .accessibilityIdentifier("SPEECH_AND_TAP_PAD_2026_10_29")
+                    .accessibilityLabel(Text(verbatim: "0.6.0 手动输入与测速更新，构建日期 2026 年 11 月 1 日"))
+                    .accessibilityIdentifier("MANUAL_BPM_LIVE_TAP_2026_11_01")
             }
 
             Section("当前乐器") {
