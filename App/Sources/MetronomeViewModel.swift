@@ -113,12 +113,12 @@ final class MetronomeViewModel: ObservableObject {
 
     func applyTapTempo(_ bpm: Double) {
         setBPM(bpm)
-        speak("速度设为每分钟 \(Int(configuration.bpm)) 拍")
+        speak("速度设为 \(Int(configuration.bpm)) BPM")
     }
 
     func applyManualBPM(_ bpm: Double) {
         setBPM(bpm)
-        speak("速度已设为每分钟 \(Int(configuration.bpm)) 拍")
+        speak("速度已设为 \(Int(configuration.bpm)) BPM")
     }
 
     func setBPM(_ bpm: Double) {
@@ -184,7 +184,7 @@ final class MetronomeViewModel: ObservableObject {
     }
 
     private var playingStatusText: String {
-        "正在播放，每分钟 \(Int(configuration.bpm)) 拍，拍号 \(configuration.timeSignature.id)，\(timbre.title)"
+        "正在播放，\(Int(configuration.bpm)) BPM，拍号 \(configuration.timeSignature.id)，\(timbre.title)"
     }
 
     private func startHapticLoop() {

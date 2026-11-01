@@ -8,10 +8,11 @@ import UIKit
 final class TapTempoViewModel: ObservableObject {
     @Published private(set) var bpm: Double?
     @Published private(set) var tapCount: Int = 0
+    @Published private(set) var statusHint: String?
+    let groupSize = TapTempoEstimator().groupSize
 
     private var estimator = TapTempoEstimator()
     private var resetTask: Task<Void, Never>?
-    private var announcedInitialResult = false
     private var lastAnnouncedRoundedBPM: Int?
     private let speech = SpeechFeedback()
     private let audioEngine = TapTempoAudioEngine()
@@ -20,25 +21,22 @@ final class TapTempoViewModel: ObservableObject {
         resetTask?.cancel()
     }
 
-    func tap(hapticsEnabled: Bool = true) {
+    func tap(hapticsEnabled: Bool = true, countdownHintEnabled: Bool = true) {
         estimator.record(at: Date.timeIntervalSinceReferenceDate)
-        tapCount = estimator.timestamps.count
-        let newBPM = estimator.hasEnoughTapsForInitialEstimate ? estimator.bpm : nil
-        bpm = newBPM
-        if let newBPM {
-            let roundedBPM = Int(newBPM.rounded())
-            if !announcedInitialResult {
-                announcedInitialResult = true
+        tapCount = estimator.tapCount
+
+        if estimator.shouldPublishResult, let rawBPM = estimator.bpm {
+            estimator.markResultPublished()
+            let smoothedBPM = TapTempoSmoothing.next(previousBPM: bpm, rawBPM: rawBPM)
+            bpm = smoothedBPM
+            let roundedBPM = Int(smoothedBPM.rounded())
+            if lastAnnouncedRoundedBPM != roundedBPM {
                 lastAnnouncedRoundedBPM = roundedBPM
-                speech.speak("速度每分钟 \(roundedBPM) 拍")
-            } else if lastAnnouncedRoundedBPM != roundedBPM {
-                lastAnnouncedRoundedBPM = roundedBPM
-                speech.speak("\(roundedBPM) 拍")
+                speech.speak("速度 \(roundedBPM) BPM")
             }
-        } else {
-            announcedInitialResult = false
-            lastAnnouncedRoundedBPM = nil
         }
+
+        updateHint(enabled: countdownHintEnabled)
 
         if hapticsEnabled {
             let generator = UIImpactFeedbackGenerator(style: .light)
@@ -60,8 +58,29 @@ final class TapTempoViewModel: ObservableObject {
         estimator.reset()
         bpm = nil
         tapCount = 0
-        announcedInitialResult = false
         lastAnnouncedRoundedBPM = nil
+        statusHint = nil
+    }
+
+    private func updateHint(enabled: Bool) {
+        guard tapCount > 0 else {
+            statusHint = nil
+            return
+        }
+
+        guard enabled else {
+            statusHint = bpm == nil
+                ? "已记录 \(tapCount) 拍，继续敲击"
+                : "已记录 \(tapCount) 拍"
+            return
+        }
+
+        if bpm == nil {
+            let remainder = estimator.tapCount % groupSize
+            statusHint = "已记录 \(tapCount) 拍，再敲 \(groupSize - remainder) 拍得到第一个速度"
+        } else {
+            statusHint = "已记录 \(tapCount) 拍，速度正在平滑跟随"
+        }
     }
 }
 

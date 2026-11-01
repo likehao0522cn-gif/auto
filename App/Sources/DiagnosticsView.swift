@@ -41,7 +41,7 @@ struct DiagnosticsView: View {
 
             Section("节拍器设置") {
                 diagnosticRow("播放状态", value: metronome.isPlaying ? "正在播放" : "已停止")
-                diagnosticRow("速度", value: "每分钟 \(Int(metronome.configuration.bpm)) 拍")
+                diagnosticRow("速度", value: "\(Int(metronome.configuration.bpm)) BPM")
                 diagnosticRow("拍号", value: metronome.configuration.timeSignature.id)
                 diagnosticRow("重音", value: metronome.configuration.accentMode.title)
                 diagnosticRow("细分拍", value: metronome.configuration.subdivision.title)
@@ -140,7 +140,7 @@ struct DiagnosticsView: View {
         节拍器调度: 基于音频采样时间，暂无偏差数据
         最近错误: \(metronome.errorMessage ?? "无")
         节拍器播放状态: \(metronome.isPlaying ? "正在播放" : "已停止")
-        节拍器速度: 每分钟 \(Int(metronome.configuration.bpm)) 拍
+        节拍器速度: \(Int(metronome.configuration.bpm)) BPM
         拍号: \(metronome.configuration.timeSignature.id)
         重音: \(metronome.configuration.accentMode.title)
         细分拍: \(metronome.configuration.subdivision.title)

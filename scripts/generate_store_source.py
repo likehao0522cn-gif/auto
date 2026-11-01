@@ -49,7 +49,7 @@ def main() -> None:
                         "downloadURL": release_url(version, "TuneMetronome.ipa"),
                         "size": ipa_size,
                         "minOSVersion": "17.0",
-                        "versionDescription": "新增节拍器速度 20–300 手动输入、中文输入错误提示，以及测速每次拍点后实时刷新速度。",
+                        "versionDescription": "节拍器主界面改为底部固定播放与加减速控制，设置按节拍、声音、预备拍分类；测速改为平滑跟随并新增提示开关。",
                     }
                 ],
             }

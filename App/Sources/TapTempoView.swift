@@ -13,12 +13,12 @@ struct TapTempoView: View {
                 .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
 
-            Text(verbatim: viewModel.bpm.map { "每分钟 \(Int($0.rounded())) 拍" } ?? "等待拍点")
+            Text(verbatim: viewModel.bpm.map { "\(Int($0.rounded())) BPM" } ?? "等待拍点")
                 .font(.system(size: 44, weight: .bold, design: .rounded))
                 .monospacedDigit()
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(Text(verbatim: "测速结果"))
-                .accessibilityValue(Text(verbatim: viewModel.bpm.map { "每分钟 \(Int($0.rounded())) 拍" } ?? "还没有结果"))
+                .accessibilityValue(Text(verbatim: viewModel.bpm.map { "\(Int($0.rounded())) BPM" } ?? "还没有结果"))
 
             ZStack {
                 RoundedRectangle(cornerRadius: 24)
@@ -30,24 +30,32 @@ struct TapTempoView: View {
                         .accessibilityHidden(true)
                     Text(verbatim: "测速区域")
                         .font(.title2.bold())
-                    Text(verbatim: "连续单击记录拍点")
+                    Text(verbatim: "连续敲击，按组更新速度")
                         .foregroundStyle(.secondary)
                 }
                 .accessibilityHidden(true)
                 TapTempoPad(tapCount: viewModel.tapCount, bpm: viewModel.bpm) {
-                    viewModel.tap(hapticsEnabled: appModel.tapTempoHapticsEnabled)
+                    viewModel.tap(
+                        hapticsEnabled: appModel.tapTempoHapticsEnabled,
+                        countdownHintEnabled: appModel.tapTempoCountdownHintEnabled
+                    )
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .frame(maxWidth: .infinity, minHeight: 260, maxHeight: .infinity)
             .contentShape(RoundedRectangle(cornerRadius: 24))
 
-            Text(verbatim: "已记录 \(viewModel.tapCount) 拍")
-                .foregroundStyle(.secondary)
-                .accessibilityHidden(true)
+            if let hint = viewModel.statusHint {
+                Text(verbatim: hint)
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+            }
 
             Button {
-                viewModel.tap(hapticsEnabled: appModel.tapTempoHapticsEnabled)
+                viewModel.tap(
+                    hapticsEnabled: appModel.tapTempoHapticsEnabled,
+                    countdownHintEnabled: appModel.tapTempoCountdownHintEnabled
+                )
             } label: {
                 Text(verbatim: "记录一拍")
                     .frame(maxWidth: .infinity, minHeight: 48)
@@ -82,7 +90,7 @@ struct TapTempoView: View {
                 Text(verbatim: "拍点触觉反馈")
             }
 
-            Text(verbatim: "可使用音量键记录拍点；该能力仍需真机验证，失败时请使用屏幕区域或“记录一拍”按钮。")
+            Text(verbatim: "前 \(viewModel.groupSize) 拍给出第一个速度，之后取最近八个拍点间隔平滑跟随。可使用音量键记录拍点；该能力仍需真机验证。")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }
@@ -91,7 +99,10 @@ struct TapTempoView: View {
         .navigationTitle("测速")
         .onAppear {
             volumeButtons.start {
-                viewModel.tap(hapticsEnabled: appModel.tapTempoHapticsEnabled)
+                viewModel.tap(
+                    hapticsEnabled: appModel.tapTempoHapticsEnabled,
+                    countdownHintEnabled: appModel.tapTempoCountdownHintEnabled
+                )
             }
         }
         .onDisappear {

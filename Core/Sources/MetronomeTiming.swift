@@ -40,6 +40,12 @@ public struct TimeSignature: Identifiable, Hashable, Sendable, CustomStringConve
     public var id: String { "\(numerator)/\(denominator)" }
     public var description: String { id }
 
+    /// Short spoken title used by VoiceOver. Keep this concise; detailed meter
+    /// explanations belong in help text rather than every picker option.
+    public var spokenTitle: String {
+        "\(id) 拍"
+    }
+
     public func beatDuration(atBPM bpm: Double) -> TimeInterval {
         guard bpm > 0 else { return 0 }
         return (60.0 / bpm) * (4.0 / Double(denominator))
@@ -74,6 +80,13 @@ public enum AccentMode: String, CaseIterable, Identifiable, Hashable, Sendable {
         case .everyBeat: return "每拍重音"
         }
     }
+
+    public var spokenTitle: String {
+        switch self {
+        case .firstBeat: return "仅第一拍重音，用来区分小节开头"
+        case .everyBeat: return "每一拍都重音，所有拍声音一样"
+        }
+    }
 }
 
 public enum Subdivision: Int, CaseIterable, Identifiable, Hashable, Sendable {
@@ -92,6 +105,15 @@ public enum Subdivision: Int, CaseIterable, Identifiable, Hashable, Sendable {
         case .four: return "四连"
         }
     }
+
+    public var spokenTitle: String {
+        switch self {
+        case .none: return "不细分，每拍只响一次"
+        case .two: return "二连，每拍平均分成两次"
+        case .three: return "三连，每拍平均分成三次"
+        case .four: return "四连，每拍平均分成四次"
+        }
+    }
 }
 
 public enum CountInBars: Int, CaseIterable, Identifiable, Hashable, Sendable {
@@ -106,6 +128,14 @@ public enum CountInBars: Int, CaseIterable, Identifiable, Hashable, Sendable {
         case .off: return "关闭"
         case .one: return "1 小节"
         case .two: return "2 小节"
+        }
+    }
+
+    public var spokenTitle: String {
+        switch self {
+        case .off: return "关闭预备拍，点开始立即播放"
+        case .one: return "一小节预备拍，先数一小节再开始"
+        case .two: return "两小节预备拍，先数两小节再开始"
         }
     }
 }
@@ -197,22 +227,34 @@ public enum MetronomePattern {
 
 public struct TapTempoEstimator: Sendable {
     public private(set) var timestamps: [TimeInterval] = []
+    public private(set) var tapCount: Int = 0
     public let resetInterval: TimeInterval
+    public let maximumIntervalCount: Int
+    public let groupSize: Int
     public let maximumTapCount: Int
+    private var lastPublishedTapCount: Int = 0
 
-    public init(resetInterval: TimeInterval = 3, maximumTapCount: Int = 8) {
+    public init(
+        resetInterval: TimeInterval = 3,
+        maximumIntervalCount: Int = 8,
+        groupSize: Int = 4
+    ) {
         self.resetInterval = resetInterval
-        self.maximumTapCount = maximumTapCount
+        self.maximumIntervalCount = max(2, maximumIntervalCount)
+        self.groupSize = max(2, groupSize)
+        self.maximumTapCount = self.maximumIntervalCount + 1
     }
 
     public mutating func record(at timestamp: TimeInterval) {
         if let last = timestamps.last, timestamp - last > resetInterval {
-            timestamps.removeAll(keepingCapacity: true)
+            reset()
         } else if let last = timestamps.last, timestamp <= last {
-            timestamps.removeAll(keepingCapacity: true)
+            reset()
         }
 
         timestamps.append(timestamp)
+        tapCount += 1
+
         if timestamps.count > maximumTapCount {
             timestamps.removeFirst(timestamps.count - maximumTapCount)
         }
@@ -220,6 +262,8 @@ public struct TapTempoEstimator: Sendable {
 
     public mutating func reset() {
         timestamps.removeAll(keepingCapacity: true)
+        tapCount = 0
+        lastPublishedTapCount = 0
     }
 
     public var intervals: [TimeInterval] {
@@ -236,7 +280,30 @@ public struct TapTempoEstimator: Sendable {
     }
 
     public var hasEnoughTapsForInitialEstimate: Bool {
-        timestamps.count >= 3
+        tapCount >= groupSize
+    }
+
+    public var shouldPublishResult: Bool {
+        hasEnoughTapsForInitialEstimate && tapCount > lastPublishedTapCount
+    }
+
+    public mutating func markResultPublished() {
+        lastPublishedTapCount = tapCount
+    }
+}
+
+public enum TapTempoSmoothing {
+    public static let defaultFactor = 0.35
+
+    public static func next(
+        previousBPM: Double?,
+        rawBPM: Double,
+        factor: Double = defaultFactor
+    ) -> Double {
+        guard let previousBPM, previousBPM.isFinite else { return rawBPM }
+        let clampedFactor = min(1, max(0, factor))
+        let smoothed = previousBPM + (rawBPM - previousBPM) * clampedFactor
+        return smoothed.isFinite ? smoothed : rawBPM
     }
 }
 

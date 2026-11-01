@@ -12,7 +12,7 @@ struct HomeView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(verbatim: "节拍器正在播放")
                                 .font(.headline)
-                            Text(verbatim: "每分钟 \(Int(metronome.configuration.bpm)) 拍，拍号 \(metronome.configuration.timeSignature.id)")
+                            Text(verbatim: "\(Int(metronome.configuration.bpm)) BPM，拍号 \(metronome.configuration.timeSignature.id)")
                                 .foregroundStyle(.secondary)
                         }
                         Spacer()
@@ -81,10 +81,10 @@ struct HomeView: View {
             }
 
             Section("版本") {
-                Text(verbatim: "0.6.0 手动输入与测速更新 2026-11-01")
+                Text(verbatim: "0.6.1 布局与测速优化 2026-11-01")
                     .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(Text(verbatim: "0.6.0 手动输入与测速更新，构建日期 2026 年 11 月 1 日"))
-                    .accessibilityIdentifier("MANUAL_BPM_LIVE_TAP_2026_11_01")
+                    .accessibilityLabel(Text(verbatim: "0.6.1 布局与测速优化，构建日期 2026 年 11 月 1 日"))
+                    .accessibilityIdentifier("LAYOUT_TAP_TEMPO_2026_11_01")
             }
 
             Section("当前乐器") {

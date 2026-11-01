@@ -14,7 +14,7 @@ struct TapTempoPad: UIViewRepresentable {
         let view = TapPadUIView()
         view.isAccessibilityElement = true
         view.accessibilityLabel = "测速拍点区域"
-        view.accessibilityHint = "单次触摸此区域即可记录一拍"
+        view.accessibilityHint = "单次触摸记录一拍；速度会平滑跟随"
         view.accessibilityIdentifier = "TapTempoPad"
         view.accessibilityTraits = [.button, .allowsDirectInteraction]
         view.onTap = context.coordinator.onTap
@@ -25,9 +25,9 @@ struct TapTempoPad: UIViewRepresentable {
     func updateUIView(_ uiView: TapPadUIView, context: Context) {
         context.coordinator.onTap = onTap
         if let bpm {
-            uiView.accessibilityValue = "已记录 \(tapCount) 拍，每分钟 \(Int(bpm.rounded())) 拍"
+            uiView.accessibilityValue = "已记录 \(tapCount) 拍，速度 \(Int(bpm.rounded())) BPM"
         } else {
-            uiView.accessibilityValue = "已记录 \(tapCount) 拍"
+            uiView.accessibilityValue = "已记录 \(tapCount) 拍，继续敲击以计算速度"
         }
     }
 

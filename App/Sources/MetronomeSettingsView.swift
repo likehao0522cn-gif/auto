@@ -9,13 +9,14 @@ struct MetronomeSoundSettingsView: View {
             Section("节拍器音色") {
                 Picker(selection: $metronome.timbre) {
                     ForEach(MetronomeTimbre.allCases) { timbre in
-                        Text(verbatim: timbre.title).tag(timbre)
+                        Text(verbatim: timbre.title)
+                            .tag(timbre)
+                            .accessibilityLabel(Text(verbatim: timbre.spokenTitle))
                     }
                 } label: {
                     Text(verbatim: "节拍器音色")
                 }
                 .pickerStyle(.inline)
-                .accessibilityLabel(Text(verbatim: "节拍器音色"))
             }
 
             Section("触觉") {

@@ -15,6 +15,14 @@ enum MetronomeTimbre: String, CaseIterable, Identifiable, Hashable {
         }
     }
 
+    var spokenTitle: String {
+        switch self {
+        case .crisp: return "清脆点击，明亮短促，容易从环境中听出"
+        case .soft: return "柔和木鱼，低沉温暖，适合长时间练习"
+        case .electronic: return "电子脉冲，带高频泛音，适合快速节奏"
+        }
+    }
+
     var accentFrequency: Double {
         switch self {
         case .crisp: return 1_760

@@ -16,6 +16,15 @@ enum AutoUpdateFeedbackMode: String, CaseIterable, Identifiable, Hashable {
             return "仅短音型 + 触觉"
         }
     }
+
+    var spokenTitle: String {
+        switch self {
+        case .numberAndHaptics:
+            return "变化数字加触觉，音高变化时朗读新的音分数字"
+        case .earconAndHaptics:
+            return "仅短音型加触觉，不朗读数字，只播放提示音型"
+        }
+    }
 }
 
 enum NoteNamingStyle: String, CaseIterable, Identifiable, Hashable {
@@ -28,6 +37,13 @@ enum NoteNamingStyle: String, CaseIterable, Identifiable, Hashable {
         switch self {
         case .letter: return "字母音名 C4"
         case .solfege: return "固定唱名 do4"
+        }
+    }
+
+    var spokenTitle: String {
+        switch self {
+        case .letter: return "字母音名，例如 C4、升F3"
+        case .solfege: return "固定唱名，例如 do4、升fa3"
         }
     }
 }
@@ -65,6 +81,13 @@ enum ReferenceToneTimbre: String, CaseIterable, Identifiable, Hashable {
         case .piano: return "钢琴音色"
         }
     }
+
+    var spokenTitle: String {
+        switch self {
+        case .sine: return "纯正弦音，单一频率，最容易听准"
+        case .piano: return "钢琴音色，接近真实钢琴，带泛音"
+        }
+    }
 }
 
 enum AppLanguage: String, CaseIterable, Identifiable, Hashable {
@@ -82,6 +105,13 @@ enum AppLanguage: String, CaseIterable, Identifiable, Hashable {
 
     var isAvailable: Bool {
         self == .simplifiedChinese
+    }
+
+    var spokenTitle: String {
+        switch self {
+        case .simplifiedChinese: return "简体中文"
+        case .english: return "英语，尚未提供"
+        }
     }
 }
 
@@ -124,6 +154,10 @@ final class AppModel: ObservableObject {
     }
 
     @Published var tapTempoHapticsEnabled: Bool {
+        didSet { save() }
+    }
+
+    @Published var tapTempoCountdownHintEnabled: Bool {
         didSet { save() }
     }
 
@@ -170,6 +204,7 @@ final class AppModel: ObservableObject {
         ) ?? .simplifiedChinese
         self.language = storedLanguage.isAvailable ? storedLanguage : .simplifiedChinese
         self.tapTempoHapticsEnabled = defaults.object(forKey: Keys.tapTempoHapticsEnabled) as? Bool ?? true
+        self.tapTempoCountdownHintEnabled = defaults.object(forKey: Keys.tapTempoCountdownHintEnabled) as? Bool ?? true
         let speechSettings = SpeechSettings.load(from: defaults)
         self.speechRate = speechSettings.rate
         self.speechPitch = speechSettings.pitch
@@ -239,6 +274,7 @@ final class AppModel: ObservableObject {
         referenceToneTimbre = .sine
         language = .simplifiedChinese
         tapTempoHapticsEnabled = true
+        tapTempoCountdownHintEnabled = true
         speechRate = SpeechSettings.defaultRate
         speechPitch = SpeechSettings.defaultPitch
         speechVolume = SpeechSettings.defaultVolume
@@ -256,6 +292,7 @@ final class AppModel: ObservableObject {
         defaults.set(referenceToneTimbre.rawValue, forKey: Keys.referenceToneTimbre)
         defaults.set(language.rawValue, forKey: Keys.language)
         defaults.set(tapTempoHapticsEnabled, forKey: Keys.tapTempoHapticsEnabled)
+        defaults.set(tapTempoCountdownHintEnabled, forKey: Keys.tapTempoCountdownHintEnabled)
         SpeechSettings(
             rate: speechRate,
             pitch: speechPitch,
@@ -276,6 +313,7 @@ final class AppModel: ObservableObject {
         static let referenceToneTimbre = "referenceToneTimbre"
         static let language = "language"
         static let tapTempoHapticsEnabled = "tapTempoHapticsEnabled"
+        static let tapTempoCountdownHintEnabled = "tapTempoCountdownHintEnabled"
     }
 }
 

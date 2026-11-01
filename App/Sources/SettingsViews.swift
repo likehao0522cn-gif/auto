@@ -103,25 +103,27 @@ struct TuningSettingsView: View {
             Section("音名读法") {
                 Picker(selection: $appModel.noteNamingStyle) {
                     ForEach(NoteNamingStyle.allCases) { style in
-                        Text(verbatim: style.title).tag(style)
+                        Text(verbatim: style.title)
+                            .tag(style)
+                            .accessibilityLabel(Text(verbatim: style.spokenTitle))
                     }
                 } label: {
                     Text(verbatim: "音名读法")
                 }
                 .pickerStyle(.inline)
-                .accessibilityLabel(Text(verbatim: "音名读法"))
             }
 
             Section("自动更新反馈") {
                 Picker(selection: $appModel.autoUpdateFeedbackMode) {
                     ForEach(AutoUpdateFeedbackMode.allCases) { mode in
-                        Text(verbatim: mode.title).tag(mode)
+                        Text(verbatim: mode.title)
+                            .tag(mode)
+                            .accessibilityLabel(Text(verbatim: mode.spokenTitle))
                     }
                 } label: {
                     Text(verbatim: "自动更新反馈")
                 }
                 .pickerStyle(.inline)
-                .accessibilityLabel(Text(verbatim: "自动更新反馈"))
 
                 Text(verbatim: "首次检测结果始终播报完整音名和音分。")
                     .font(.footnote)
@@ -140,13 +142,14 @@ struct SoundSettingsView: View {
             Section("参考音音色") {
                 Picker(selection: $appModel.referenceToneTimbre) {
                     ForEach(ReferenceToneTimbre.allCases) { timbre in
-                        Text(verbatim: timbre.title).tag(timbre)
+                        Text(verbatim: timbre.title)
+                            .tag(timbre)
+                            .accessibilityLabel(Text(verbatim: timbre.spokenTitle))
                     }
                 } label: {
                     Text(verbatim: "参考音音色")
                 }
                 .pickerStyle(.inline)
-                .accessibilityLabel(Text(verbatim: "参考音音色"))
             }
 
             Section {
@@ -204,13 +207,14 @@ struct SpeechSettingsView: View {
             Section("语音来源") {
                 Picker(selection: $appModel.speechOutputMode) {
                     ForEach(SpeechOutputMode.allCases) { mode in
-                        Text(verbatim: mode.title).tag(mode)
+                        Text(verbatim: mode.title)
+                            .tag(mode)
+                            .accessibilityLabel(Text(verbatim: mode.spokenTitle))
                     }
                 } label: {
                     Text(verbatim: "播报方式")
                 }
                 .pickerStyle(.inline)
-                .accessibilityLabel(Text(verbatim: "播报方式"))
 
                 Text(verbatim: appModel.speechOutputMode.detail)
                     .font(.footnote)
@@ -291,13 +295,13 @@ struct OtherSettingsView: View {
                     ForEach(AppLanguage.allCases) { language in
                         Text(verbatim: language.title)
                             .tag(language)
+                            .accessibilityLabel(Text(verbatim: language.spokenTitle))
                             .disabled(!language.isAvailable)
                     }
                 } label: {
                     Text(verbatim: "界面语言")
                 }
                 .pickerStyle(.inline)
-                .accessibilityLabel(Text(verbatim: "界面语言"))
 
                 Text(verbatim: "英文界面和英文语音尚未完成，当前版本只提供中文。")
                     .font(.footnote)

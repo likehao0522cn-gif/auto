@@ -28,6 +28,17 @@ enum SpeechOutputMode: String, CaseIterable, Identifiable, Hashable {
             return "旁白开启时使用系统旁白的声音和语速；旁白关闭时自动改用应用语音。应用内的语速和音调设置在旁白播报时不生效。"
         }
     }
+
+    var spokenTitle: String {
+        switch self {
+        case .appVoice:
+            return "应用语音，始终使用应用内语音"
+        case .automatic:
+            return "自动，旁白开启时使用旁白，否则使用应用语音"
+        case .voiceOver:
+            return "旁白播报，优先使用系统旁白声音"
+        }
+    }
 }
 
 struct SpeechSettings {

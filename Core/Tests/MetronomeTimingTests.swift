@@ -18,6 +18,8 @@ final class MetronomeTimingTests: XCTestCase {
         estimator.record(at: 0)
         estimator.record(at: 0.5)
         estimator.record(at: 1.0)
+        estimator.record(at: 1.5)
+        estimator.record(at: 2.0)
         XCTAssertTrue(estimator.hasEnoughTapsForInitialEstimate)
         XCTAssertEqual(estimator.bpm ?? 0, 120, accuracy: 0.01)
     }
@@ -28,20 +30,76 @@ final class MetronomeTimingTests: XCTestCase {
         estimator.record(at: 0.5)
         estimator.record(at: 5.0)
         XCTAssertEqual(estimator.timestamps.count, 1)
+        XCTAssertEqual(estimator.tapCount, 1)
+        XCTAssertFalse(estimator.shouldPublishResult)
     }
 
-    func testTapTempoRecalculatesAfterEachAdditionalTap() {
+    func testTapTempoPublishesFirstResultAfterFourTapsThenEveryTap() {
         var estimator = TapTempoEstimator()
         estimator.record(at: 0)
         estimator.record(at: 0.5)
         estimator.record(at: 1.0)
+        estimator.record(at: 1.5)
+        XCTAssertTrue(estimator.hasEnoughTapsForInitialEstimate)
+        XCTAssertTrue(estimator.shouldPublishResult)
+        estimator.markResultPublished()
         XCTAssertEqual(estimator.bpm ?? 0, 120, accuracy: 0.01)
 
-        estimator.record(at: 1.25)
-        XCTAssertEqual(estimator.bpm ?? 0, 144, accuracy: 0.01)
+        estimator.record(at: 2.0)
+        XCTAssertTrue(estimator.shouldPublishResult)
+        estimator.markResultPublished()
+        XCTAssertEqual(estimator.bpm ?? 0, 120, accuracy: 0.01)
 
+        estimator.record(at: 2.5)
+        XCTAssertTrue(estimator.shouldPublishResult)
+        estimator.markResultPublished()
+        XCTAssertEqual(estimator.bpm ?? 0, 120, accuracy: 0.01)
+    }
+
+    func testTapTempoKeepsOnlyEightIntervals() {
+        var estimator = TapTempoEstimator()
+        for index in 0...10 {
+            estimator.record(at: Double(index) * 0.5)
+        }
+        XCTAssertEqual(estimator.tapCount, 11)
+        XCTAssertEqual(estimator.timestamps.count, 9)
+        XCTAssertEqual(estimator.intervals.count, 8)
+    }
+
+    func testTapTempoWaitsForFourTapsBeforePublishing() {
+        var estimator = TapTempoEstimator()
+        estimator.record(at: 0)
+        estimator.record(at: 0.5)
+        estimator.record(at: 1.0)
+        XCTAssertFalse(estimator.hasEnoughTapsForInitialEstimate)
+        XCTAssertFalse(estimator.shouldPublishResult)
         estimator.record(at: 1.5)
-        XCTAssertEqual(estimator.bpm ?? 0, 160, accuracy: 0.01)
+        XCTAssertTrue(estimator.hasEnoughTapsForInitialEstimate)
+        XCTAssertTrue(estimator.shouldPublishResult)
+    }
+
+    func testTapTempoSmoothingUsesFirstValueThenMovesGradually() {
+        let initial = TapTempoSmoothing.next(previousBPM: nil, rawBPM: 120)
+        XCTAssertEqual(initial, 120, accuracy: 0.0001)
+
+        let next = TapTempoSmoothing.next(previousBPM: 120, rawBPM: 160)
+        XCTAssertEqual(next, 134, accuracy: 0.0001)
+
+        let held = TapTempoSmoothing.next(previousBPM: 134, rawBPM: 134)
+        XCTAssertEqual(held, 134, accuracy: 0.0001)
+    }
+
+    func testTapTempoSmoothingFactorIsClamped() {
+        XCTAssertEqual(
+            TapTempoSmoothing.next(previousBPM: 100, rawBPM: 200, factor: 0),
+            100,
+            accuracy: 0.0001
+        )
+        XCTAssertEqual(
+            TapTempoSmoothing.next(previousBPM: 100, rawBPM: 200, factor: 2),
+            200,
+            accuracy: 0.0001
+        )
     }
 
     func testAccentPattern() {
@@ -98,6 +156,24 @@ final class MetronomeTimingTests: XCTestCase {
         XCTAssertEqual(BPMInput.parse("301"), .failure(.outOfRange))
     }
 
+    func testMetronomeOptionsHaveDistinctSpokenDescriptions() {
+        let spokenTitles = TimeSignature.presets.map(\.spokenTitle)
+        XCTAssertEqual(Set(spokenTitles).count, spokenTitles.count)
+        XCTAssertTrue(spokenTitles.allSatisfy { !$0.isEmpty })
+        XCTAssertEqual(TimeSignature(numerator: 4, denominator: 4).spokenTitle, "4/4 拍")
+        XCTAssertEqual(TimeSignature(numerator: 6, denominator: 8).spokenTitle, "6/8 拍")
+
+        let accentTitles = AccentMode.allCases.map(\.spokenTitle)
+        XCTAssertEqual(Set(accentTitles).count, accentTitles.count)
+        XCTAssertNotEqual(accentTitles[0], accentTitles[1])
+
+        let subdivisionTitles = Subdivision.allCases.map(\.spokenTitle)
+        XCTAssertEqual(Set(subdivisionTitles).count, subdivisionTitles.count)
+
+        let countInTitles = CountInBars.allCases.map(\.spokenTitle)
+        XCTAssertEqual(Set(countInTitles).count, countInTitles.count)
+    }
+
     func testMetronomeTempoClampsAndRoundsBPM() {
         XCTAssertEqual(MetronomeTempo.clampedBPM(19), 20)
         XCTAssertEqual(MetronomeTempo.clampedBPM(120.6), 121)
@@ -109,6 +185,8 @@ final class MetronomeTimingTests: XCTestCase {
         estimator.record(at: 0)
         estimator.record(at: 0.1)
         estimator.record(at: 0.2)
+        estimator.record(at: 0.3)
+        estimator.record(at: 0.4)
         XCTAssertGreaterThan(estimator.bpm ?? 0, 300)
     }
 
