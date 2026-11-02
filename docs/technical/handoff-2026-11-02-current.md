@@ -19,11 +19,10 @@
 ## 2. 当前分支与提交状态
 
 - 分支：`fix/tuner-lifecycle`
-- 本地 HEAD：`a429cd1 Release 0.6.4 tuner audio and VoiceOver fixes`
-- 远端：`origin/fix/tuner-lifecycle` = `5a365eb Fix tuner VoiceOver audio and time-signature labels`
-- 本地比远端多 1 个发布版本提交 `a429cd1`，等待网络恢复后推送并打 `v0.6.4` 标签
+- 本地 HEAD：`829a54f Update handoff for tuner audio fix`
+- 远端：`origin/fix/tuner-lifecycle` = `829a54f`，**已同步**
 - 工作区：干净
-- 已发布标签：`v0.6.0`、`v0.6.1`、`v0.6.2`、`v0.6.3`
+- 已发布标签：`v0.6.0`、`v0.6.1`、`v0.6.2`、`v0.6.3`、`v0.6.4`
 
 ### 2026-11-02 新增未发布修复
 
@@ -33,9 +32,13 @@
 - 拍号聚焦和上下清扫统一朗读 `4/4 拍`、`6/8 拍` 等完整形式。
 - 主界面“选择拍号”弹层与“节拍器设置 → 拍号”列表统一使用相同朗读。
 - 提交 `5a365eb` 已推送，GitHub Actions 运行 `41450627369` 全部成功。
-- `0.6.4` 版本号和构建标记已本地提交，但推送时 `github.com:443` 连接失败；
-  尚未发布、尚未真机验证。
-- 旁白触摸震动是否恢复仍需真机验证；当前修复只改变了音频会话属性和朗读文案。
+- `v0.6.4` 已发布，Release 页面：
+  `https://github.com/likehao0522cn-gif/auto/releases/tag/v0.6.4`
+- IPA：`TuneMetronome.ipa`，607,669 字节，
+  SHA-256 `506e6fd28fdd468c6e88139e114a86dbeeebf8730afa0a5be106b6ec7a6284bc`
+- `source.json` 已确认版本为 0.6.4。
+- **0.6.4 尚未真机验证。** 旁白触摸震动是否恢复仍需真机确认；
+  当前修复只改变了音频会话属性和朗读文案。
 
 ### 最新发布
 
