@@ -116,49 +116,22 @@ public enum Subdivision: Int, CaseIterable, Identifiable, Hashable, Sendable {
     }
 }
 
-public enum CountInBars: Int, CaseIterable, Identifiable, Hashable, Sendable {
-    case off = 0
-    case one = 1
-    case two = 2
-
-    public var id: Int { rawValue }
-
-    public var title: String {
-        switch self {
-        case .off: return "关闭"
-        case .one: return "1 小节"
-        case .two: return "2 小节"
-        }
-    }
-
-    public var spokenTitle: String {
-        switch self {
-        case .off: return "关闭预备拍，点开始立即播放"
-        case .one: return "一小节预备拍，先数一小节再开始"
-        case .two: return "两小节预备拍，先数两小节再开始"
-        }
-    }
-}
-
 public struct MetronomeConfiguration: Equatable, Sendable {
     public var bpm: Double
     public var timeSignature: TimeSignature
     public var accentMode: AccentMode
     public var subdivision: Subdivision
-    public var countInBars: CountInBars
 
     public init(
         bpm: Double = 120,
         timeSignature: TimeSignature = TimeSignature(numerator: 4, denominator: 4),
         accentMode: AccentMode = .firstBeat,
-        subdivision: Subdivision = .none,
-        countInBars: CountInBars = .off
+        subdivision: Subdivision = .none
     ) {
         self.bpm = bpm
         self.timeSignature = timeSignature
         self.accentMode = accentMode
         self.subdivision = subdivision
-        self.countInBars = countInBars
     }
 
     public var beatDuration: TimeInterval {
@@ -181,19 +154,6 @@ public struct MetronomeClick: Equatable, Sendable {
 }
 
 public enum MetronomePattern {
-    public static func countInClicks(for configuration: MetronomeConfiguration) -> [MetronomeClick] {
-        guard configuration.countInBars.rawValue > 0 else { return [] }
-        let barClicks = clicks(for: configuration)
-        return (0..<configuration.countInBars.rawValue).flatMap { barIndex in
-            barClicks.map { click in
-                MetronomeClick(
-                    time: click.time + Double(barIndex) * configuration.barDuration,
-                    isAccent: click.isAccent
-                )
-            }
-        }
-    }
-
     public static func clicks(for configuration: MetronomeConfiguration) -> [MetronomeClick] {
         let beatDuration = configuration.beatDuration
         guard beatDuration > 0 else { return [] }
@@ -245,11 +205,16 @@ public struct TapTempoEstimator: Sendable {
         self.maximumTapCount = self.maximumIntervalCount + 1
     }
 
-    public mutating func record(at timestamp: TimeInterval) {
+    @discardableResult
+    public mutating func record(at timestamp: TimeInterval) -> Bool {
+        var restarted = false
+
         if let last = timestamps.last, timestamp - last > resetInterval {
             reset()
+            restarted = true
         } else if let last = timestamps.last, timestamp <= last {
             reset()
+            restarted = true
         }
 
         timestamps.append(timestamp)
@@ -258,6 +223,8 @@ public struct TapTempoEstimator: Sendable {
         if timestamps.count > maximumTapCount {
             timestamps.removeFirst(timestamps.count - maximumTapCount)
         }
+
+        return restarted
     }
 
     public mutating func reset() {
@@ -284,26 +251,11 @@ public struct TapTempoEstimator: Sendable {
     }
 
     public var shouldPublishResult: Bool {
-        hasEnoughTapsForInitialEstimate && tapCount > lastPublishedTapCount
+        hasEnoughTapsForInitialEstimate && tapCount - lastPublishedTapCount >= groupSize
     }
 
     public mutating func markResultPublished() {
         lastPublishedTapCount = tapCount
-    }
-}
-
-public enum TapTempoSmoothing {
-    public static let defaultFactor = 0.35
-
-    public static func next(
-        previousBPM: Double?,
-        rawBPM: Double,
-        factor: Double = defaultFactor
-    ) -> Double {
-        guard let previousBPM, previousBPM.isFinite else { return rawBPM }
-        let clampedFactor = min(1, max(0, factor))
-        let smoothed = previousBPM + (rawBPM - previousBPM) * clampedFactor
-        return smoothed.isFinite ? smoothed : rawBPM
     }
 }
 

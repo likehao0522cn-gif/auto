@@ -27,7 +27,7 @@ struct BeatSettingsView: View {
                 .pickerStyle(.inline)
             }
 
-            Section {
+            Section("重音") {
                 Picker(selection: $metronome.configuration.accentMode) {
                     ForEach(AccentMode.allCases) { accent in
                         Text(verbatim: accent.title)
@@ -40,7 +40,7 @@ struct BeatSettingsView: View {
                 .pickerStyle(.inline)
             }
 
-            Section {
+            Section("细分拍") {
                 Picker(selection: $metronome.configuration.subdivision) {
                     ForEach(Subdivision.allCases) { subdivision in
                         Text(verbatim: subdivision.title)
@@ -70,23 +70,6 @@ struct BeatSettingsView: View {
                 }
 
                 Text(verbatim: "锁屏和后台播放时，触觉不保证持续可用；音频点击声始终是主要节拍提示。")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-
-            Section("预备拍") {
-                Picker(selection: $metronome.configuration.countInBars) {
-                    ForEach(CountInBars.allCases) { countIn in
-                        Text(verbatim: countIn.title)
-                            .tag(countIn)
-                            .accessibilityLabel(Text(verbatim: countIn.spokenTitle))
-                    }
-                } label: {
-                    Text(verbatim: "预备拍")
-                }
-                .pickerStyle(.inline)
-
-                Text(verbatim: "预备拍会在正式播放前建立速度和拍感。")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }

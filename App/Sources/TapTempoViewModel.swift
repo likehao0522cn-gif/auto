@@ -22,14 +22,19 @@ final class TapTempoViewModel: ObservableObject {
     }
 
     func tap(hapticsEnabled: Bool = true, countdownHintEnabled: Bool = true) {
-        estimator.record(at: Date.timeIntervalSinceReferenceDate)
+        let restarted = estimator.record(at: Date.timeIntervalSinceReferenceDate)
+        if restarted {
+            bpm = nil
+            tapCount = 0
+            lastAnnouncedRoundedBPM = nil
+            statusHint = nil
+        }
         tapCount = estimator.tapCount
 
-        if estimator.shouldPublishResult, let rawBPM = estimator.bpm {
+        if estimator.shouldPublishResult, let newBPM = estimator.bpm {
             estimator.markResultPublished()
-            let smoothedBPM = TapTempoSmoothing.next(previousBPM: bpm, rawBPM: rawBPM)
-            bpm = smoothedBPM
-            let roundedBPM = Int(smoothedBPM.rounded())
+            bpm = newBPM
+            let roundedBPM = Int(newBPM.rounded())
             if lastAnnouncedRoundedBPM != roundedBPM {
                 lastAnnouncedRoundedBPM = roundedBPM
                 speech.speak("速度 \(roundedBPM) BPM")
@@ -49,7 +54,8 @@ final class TapTempoViewModel: ObservableObject {
         resetTask = Task { @MainActor [weak self] in
             try? await Task.sleep(for: .seconds(3))
             guard !Task.isCancelled else { return }
-            self?.reset()
+            guard let self, self.bpm == nil else { return }
+            self.reset()
         }
     }
 
@@ -78,8 +84,11 @@ final class TapTempoViewModel: ObservableObject {
         if bpm == nil {
             let remainder = estimator.tapCount % groupSize
             statusHint = "已记录 \(tapCount) 拍，再敲 \(groupSize - remainder) 拍得到第一个速度"
+        } else if estimator.shouldPublishResult {
+            statusHint = "已记录 \(tapCount) 拍，再敲 \(groupSize) 拍更新速度"
         } else {
-            statusHint = "已记录 \(tapCount) 拍，速度正在平滑跟随"
+            let remainder = estimator.tapCount % groupSize
+            statusHint = "已记录 \(tapCount) 拍，再敲 \(max(1, groupSize - remainder)) 拍更新速度"
         }
     }
 }

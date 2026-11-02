@@ -9,17 +9,12 @@ struct MetronomeView: View {
     @State private var bpmInputError: String?
     @FocusState private var isBPMInputFocused: Bool
 
-    private var configurationSummary: String {
-        let configuration = metronome.configuration
-        return "\(configuration.timeSignature.id) · \(configuration.accentMode.title) · \(configuration.subdivision.title)细分 · \(configuration.countInBars.title)预备拍"
-    }
-
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
                 VStack(spacing: 24) {
                     speedReadout
-                    configurationSummaryRow
+                    timeSignatureRow
                     secondaryActions
                 }
                 .padding(.horizontal, 20)
@@ -39,7 +34,7 @@ struct MetronomeView: View {
                     Image(systemName: "gearshape")
                 }
                 .accessibilityLabel(Text(verbatim: "节拍器设置"))
-                .accessibilityHint(Text(verbatim: "包含拍号、重音、细分拍、音色、触觉、预备拍、测速提示和帮助"))
+                .accessibilityHint(Text(verbatim: "包含拍号、重音、细分拍、音色、触觉、测速提示和帮助"))
             }
 
             ToolbarItemGroup(placement: .keyboard) {
@@ -83,16 +78,18 @@ struct MetronomeView: View {
         .accessibilityValue(Text(verbatim: "\(Int(metronome.configuration.bpm)) BPM，\(metronome.statusText)"))
     }
 
-    private var configurationSummaryRow: some View {
+    private var timeSignatureRow: some View {
         NavigationLink {
             BeatSettingsView()
         } label: {
             HStack {
-                Text(verbatim: configurationSummary)
+                Text(verbatim: "拍号")
                     .font(.subheadline)
-                    .multilineTextAlignment(.leading)
-                    .lineLimit(2)
+                    .foregroundStyle(.secondary)
                 Spacer(minLength: 8)
+                Text(verbatim: metronome.configuration.timeSignature.id)
+                    .font(.title3.weight(.semibold))
+                    .monospacedDigit()
                 Image(systemName: "chevron.right")
                     .font(.footnote)
                     .foregroundStyle(.tertiary)
@@ -105,9 +102,9 @@ struct MetronomeView: View {
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(verbatim: "当前节拍设置"))
-        .accessibilityValue(Text(verbatim: configurationSummary))
-        .accessibilityHint(Text(verbatim: "打开节拍器设置"))
+        .accessibilityLabel(Text(verbatim: "拍号"))
+        .accessibilityValue(Text(verbatim: metronome.configuration.timeSignature.id))
+        .accessibilityHint(Text(verbatim: "打开节拍器设置，可修改拍号、重音和细分拍"))
     }
 
     private var secondaryActions: some View {

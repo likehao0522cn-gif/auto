@@ -34,7 +34,7 @@ final class MetronomeTimingTests: XCTestCase {
         XCTAssertFalse(estimator.shouldPublishResult)
     }
 
-    func testTapTempoPublishesFirstResultAfterFourTapsThenEveryTap() {
+    func testTapTempoPublishesFirstResultAfterFourTapsThenEveryFourTaps() {
         var estimator = TapTempoEstimator()
         estimator.record(at: 0)
         estimator.record(at: 0.5)
@@ -46,11 +46,13 @@ final class MetronomeTimingTests: XCTestCase {
         XCTAssertEqual(estimator.bpm ?? 0, 120, accuracy: 0.01)
 
         estimator.record(at: 2.0)
-        XCTAssertTrue(estimator.shouldPublishResult)
-        estimator.markResultPublished()
-        XCTAssertEqual(estimator.bpm ?? 0, 120, accuracy: 0.01)
+        XCTAssertFalse(estimator.shouldPublishResult)
 
         estimator.record(at: 2.5)
+        XCTAssertFalse(estimator.shouldPublishResult)
+        estimator.record(at: 3.0)
+        XCTAssertFalse(estimator.shouldPublishResult)
+        estimator.record(at: 3.5)
         XCTAssertTrue(estimator.shouldPublishResult)
         estimator.markResultPublished()
         XCTAssertEqual(estimator.bpm ?? 0, 120, accuracy: 0.01)
@@ -78,37 +80,12 @@ final class MetronomeTimingTests: XCTestCase {
         XCTAssertTrue(estimator.shouldPublishResult)
     }
 
-    func testTapTempoSmoothingUsesFirstValueThenMovesGradually() {
-        let initial = TapTempoSmoothing.next(previousBPM: nil, rawBPM: 120)
-        XCTAssertEqual(initial, 120, accuracy: 0.0001)
-
-        let next = TapTempoSmoothing.next(previousBPM: 120, rawBPM: 160)
-        XCTAssertEqual(next, 134, accuracy: 0.0001)
-
-        let held = TapTempoSmoothing.next(previousBPM: 134, rawBPM: 134)
-        XCTAssertEqual(held, 134, accuracy: 0.0001)
-    }
-
-    func testTapTempoSmoothingFactorIsClamped() {
-        XCTAssertEqual(
-            TapTempoSmoothing.next(previousBPM: 100, rawBPM: 200, factor: 0),
-            100,
-            accuracy: 0.0001
-        )
-        XCTAssertEqual(
-            TapTempoSmoothing.next(previousBPM: 100, rawBPM: 200, factor: 2),
-            200,
-            accuracy: 0.0001
-        )
-    }
-
     func testAccentPattern() {
         let config = MetronomeConfiguration(
             bpm: 120,
             timeSignature: TimeSignature(numerator: 4, denominator: 4),
             accentMode: .firstBeat,
-            subdivision: .two,
-            countInBars: .off
+            subdivision: .two
         )
         let clicks = MetronomePattern.clicks(for: config)
         XCTAssertEqual(clicks.count, 8)
@@ -121,8 +98,7 @@ final class MetronomeTimingTests: XCTestCase {
             bpm: 100,
             timeSignature: TimeSignature(numerator: 3, denominator: 4),
             accentMode: .everyBeat,
-            subdivision: .none,
-            countInBars: .off
+            subdivision: .none
         )
         let clicks = MetronomePattern.clicks(for: config)
         XCTAssertEqual(clicks.count, 3)
@@ -170,8 +146,6 @@ final class MetronomeTimingTests: XCTestCase {
         let subdivisionTitles = Subdivision.allCases.map(\.spokenTitle)
         XCTAssertEqual(Set(subdivisionTitles).count, subdivisionTitles.count)
 
-        let countInTitles = CountInBars.allCases.map(\.spokenTitle)
-        XCTAssertEqual(Set(countInTitles).count, countInTitles.count)
     }
 
     func testMetronomeTempoClampsAndRoundsBPM() {
@@ -191,45 +165,12 @@ final class MetronomeTimingTests: XCTestCase {
     }
 
 
-    func testCountInOffProducesNoClicks() {
-        let config = MetronomeConfiguration(countInBars: .off)
-        XCTAssertTrue(MetronomePattern.countInClicks(for: config).isEmpty)
-    }
-
-    func testCountInClicksForOneBar() {
-        let config = MetronomeConfiguration(
-            bpm: 120,
-            timeSignature: TimeSignature(numerator: 4, denominator: 4),
-            accentMode: .firstBeat,
-            subdivision: .none,
-            countInBars: .one
-        )
-        let clicks = MetronomePattern.countInClicks(for: config)
-        XCTAssertEqual(clicks.count, 4)
-        XCTAssertEqual(clicks.first?.time ?? -1, 0, accuracy: 0.0001)
-        XCTAssertEqual(clicks.last?.time ?? -1, 1.5, accuracy: 0.0001)
-    }
-
-    func testCountInClicksForTwoBars() {
-        let config = MetronomeConfiguration(
-            bpm: 100,
-            timeSignature: TimeSignature(numerator: 3, denominator: 4),
-            accentMode: .firstBeat,
-            subdivision: .none,
-            countInBars: .two
-        )
-        let clicks = MetronomePattern.countInClicks(for: config)
-        XCTAssertEqual(clicks.count, 6)
-        XCTAssertEqual(clicks.filter(\.isAccent).count, 2)
-    }
-
     func testTripletSubdivisionProducesTwelveClicksInFourFour() {
         let config = MetronomeConfiguration(
             bpm: 90,
             timeSignature: TimeSignature(numerator: 4, denominator: 4),
             accentMode: .firstBeat,
-            subdivision: .three,
-            countInBars: .off
+            subdivision: .three
         )
         let clicks = MetronomePattern.clicks(for: config)
         XCTAssertEqual(clicks.count, 12)

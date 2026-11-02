@@ -45,7 +45,6 @@ struct DiagnosticsView: View {
                 diagnosticRow("拍号", value: metronome.configuration.timeSignature.id)
                 diagnosticRow("重音", value: metronome.configuration.accentMode.title)
                 diagnosticRow("细分拍", value: metronome.configuration.subdivision.title)
-                diagnosticRow("预备拍", value: metronome.configuration.countInBars.title)
                 diagnosticRow("音色", value: metronome.timbre.title)
                 diagnosticRow("触觉", value: metronome.hapticsEnabled ? "开启" : "关闭")
             }
@@ -144,7 +143,6 @@ struct DiagnosticsView: View {
         拍号: \(metronome.configuration.timeSignature.id)
         重音: \(metronome.configuration.accentMode.title)
         细分拍: \(metronome.configuration.subdivision.title)
-        预备拍: \(metronome.configuration.countInBars.title)
         节拍器音色: \(metronome.timbre.title)
         触觉: \(metronome.hapticsEnabled ? "开启" : "关闭")
         """

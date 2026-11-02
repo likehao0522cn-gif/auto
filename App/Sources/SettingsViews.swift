@@ -171,7 +171,6 @@ struct MetronomeSettingsView: View {
                 LabeledContent("拍号", value: metronome.configuration.timeSignature.id)
                 LabeledContent("重音", value: metronome.configuration.accentMode.title)
                 LabeledContent("细分拍", value: metronome.configuration.subdivision.title)
-                LabeledContent("预备拍", value: metronome.configuration.countInBars.title)
                 LabeledContent("音色", value: metronome.timbre.title)
                 LabeledContent("触觉", value: metronome.hapticsEnabled ? "开启" : "关闭")
             }

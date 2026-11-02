@@ -44,26 +44,7 @@ final class MetronomeAudioEngine {
         engine.prepare()
         try engine.start()
 
-        if configuration.countInBars.rawValue > 0 {
-            let countInDuration = configuration.barDuration * Double(configuration.countInBars.rawValue)
-            let countInBuffer = try makeBuffer(
-                duration: countInDuration,
-                clicks: MetronomePattern.countInClicks(for: configuration),
-                timbre: timbre
-            )
-            player.scheduleBuffer(
-                countInBuffer,
-                at: AVAudioTime(sampleTime: 0, atRate: sampleRate),
-                options: []
-            )
-            let loopStart = AVAudioTime(
-                sampleTime: AVAudioFramePosition((countInDuration * sampleRate).rounded()),
-                atRate: sampleRate
-            )
-            player.scheduleBuffer(barBuffer, at: loopStart, options: .loops)
-        } else {
-            player.scheduleBuffer(barBuffer, at: nil, options: .loops)
-        }
+        player.scheduleBuffer(barBuffer, at: nil, options: .loops)
 
         player.play()
         isPlaying = true
