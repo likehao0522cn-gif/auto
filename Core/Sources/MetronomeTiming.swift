@@ -46,6 +46,11 @@ public struct TimeSignature: Identifiable, Hashable, Sendable, CustomStringConve
         "\(id) 拍"
     }
 
+    /// Label used when VoiceOver moves focus to the time-signature selector.
+    public var accessibilityTitle: String {
+        "\(id) 拍"
+    }
+
     public func beatDuration(atBPM bpm: Double) -> TimeInterval {
         guard bpm > 0 else { return 0 }
         return (60.0 / bpm) * (4.0 / Double(denominator))

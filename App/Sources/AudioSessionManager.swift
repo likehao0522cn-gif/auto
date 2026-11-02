@@ -5,8 +5,8 @@ enum AudioSessionManager {
         let session = AVAudioSession.sharedInstance()
         try session.setCategory(
             .playAndRecord,
-            mode: .measurement,
-            options: [.defaultToSpeaker, .allowBluetooth]
+            mode: .default,
+            options: [.defaultToSpeaker, .allowBluetooth, .mixWithOthers]
         )
         try session.setActive(true)
     }

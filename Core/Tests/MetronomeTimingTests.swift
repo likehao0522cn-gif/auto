@@ -138,6 +138,8 @@ final class MetronomeTimingTests: XCTestCase {
         XCTAssertTrue(spokenTitles.allSatisfy { !$0.isEmpty })
         XCTAssertEqual(TimeSignature(numerator: 4, denominator: 4).spokenTitle, "4/4 拍")
         XCTAssertEqual(TimeSignature(numerator: 6, denominator: 8).spokenTitle, "6/8 拍")
+        XCTAssertEqual(TimeSignature(numerator: 4, denominator: 4).accessibilityTitle, "4/4 拍")
+        XCTAssertEqual(TimeSignature(numerator: 6, denominator: 8).accessibilityTitle, "6/8 拍")
 
         let accentTitles = AccentMode.allCases.map(\.spokenTitle)
         XCTAssertEqual(Set(accentTitles).count, accentTitles.count)

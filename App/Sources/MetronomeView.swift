@@ -287,7 +287,7 @@ private struct TimeSignatureSwipeSelector: View {
             TimeSignaturePicker(selection: $selection)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(verbatim: "\(selection.id) 拍"))
+        .accessibilityLabel(Text(verbatim: selection.accessibilityTitle))
         .accessibilityHint(Text(verbatim: "双击选择，或上下清扫直接调整"))
         .accessibilityAdjustableAction { direction in
             switch direction {
@@ -308,7 +308,7 @@ private struct TimeSignatureSwipeSelector: View {
         UISelectionFeedbackGenerator().selectionChanged()
 
         if UIAccessibility.isVoiceOverRunning {
-            UIAccessibility.post(notification: .announcement, argument: next.id)
+            UIAccessibility.post(notification: .announcement, argument: next.accessibilityTitle)
         }
     }
 }
@@ -339,7 +339,7 @@ private struct TimeSignaturePicker: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel(Text(verbatim: "拍号 \(signature.spokenTitle)"))
+                .accessibilityLabel(Text(verbatim: signature.accessibilityTitle))
                 .accessibilityAddTraits(signature == selection ? [.isSelected] : [])
             }
             .navigationTitle("选择拍号")

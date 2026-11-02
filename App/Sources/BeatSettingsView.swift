@@ -11,7 +11,7 @@ struct BeatSettingsView: View {
                 NavigationLink {
                     TimeSignatureSettingsView()
                 } label: {
-                    settingRow("拍号", value: metronome.configuration.timeSignature.id)
+                    settingRow("拍号", value: metronome.configuration.timeSignature.accessibilityTitle)
                 }
 
                 NavigationLink {
@@ -92,7 +92,7 @@ private struct TimeSignatureSettingsView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel(Text(verbatim: signature.spokenTitle))
+                .accessibilityLabel(Text(verbatim: signature.accessibilityTitle))
                 .accessibilityAddTraits(
                     metronome.configuration.timeSignature == signature ? [.isSelected] : []
                 )
