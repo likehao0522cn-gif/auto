@@ -237,41 +237,50 @@ struct MetronomeView: View {
 
 private struct TimeSignatureSwipeSelector: View {
     @Binding var selection: TimeSignature
+    @State private var isShowingPicker = false
 
     private var presets: [TimeSignature] { TimeSignature.presets }
 
     var body: some View {
-        HStack(spacing: 12) {
-            Text(verbatim: "拍号")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+        Button {
+            isShowingPicker = true
+        } label: {
+            HStack(spacing: 12) {
+                Text(verbatim: "拍号")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
 
-            Spacer(minLength: 8)
+                Spacer(minLength: 8)
 
-            Image(systemName: "chevron.up")
-                .font(.caption.weight(.bold))
-                .foregroundStyle(.tertiary)
-                .accessibilityHidden(true)
+                Image(systemName: "chevron.up")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.tertiary)
+                    .accessibilityHidden(true)
 
-            Text(verbatim: selection.id)
-                .font(.title3.weight(.semibold))
-                .monospacedDigit()
+                Text(verbatim: selection.id)
+                    .font(.title3.weight(.semibold))
+                    .monospacedDigit()
 
-            Image(systemName: "chevron.down")
-                .font(.caption.weight(.bold))
-                .foregroundStyle(.tertiary)
-                .accessibilityHidden(true)
+                Image(systemName: "chevron.down")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.tertiary)
+                    .accessibilityHidden(true)
+            }
+            .padding(14)
+            .background(
+                Color(uiColor: .secondarySystemGroupedBackground),
+                in: RoundedRectangle(cornerRadius: 14)
+            )
+            .contentShape(Rectangle())
         }
-        .padding(14)
-        .background(
-            Color(uiColor: .secondarySystemGroupedBackground),
-            in: RoundedRectangle(cornerRadius: 14)
-        )
-        .contentShape(Rectangle())
+        .buttonStyle(.plain)
+        .sheet(isPresented: $isShowingPicker) {
+            TimeSignaturePicker(selection: $selection)
+        }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: "拍号"))
         .accessibilityValue(Text(verbatim: selection.id))
-        .accessibilityHint(Text(verbatim: "上下清扫调整拍号"))
+        .accessibilityHint(Text(verbatim: "双击选择拍号，或上下清扫直接调整"))
         .accessibilityAddTraits(.isAdjustable)
         .accessibilityAdjustableAction { direction in
             switch direction {
@@ -294,5 +303,50 @@ private struct TimeSignatureSwipeSelector: View {
         if UIAccessibility.isVoiceOverRunning {
             UIAccessibility.post(notification: .announcement, argument: "拍号 \(next.id)")
         }
+    }
+}
+
+private struct TimeSignaturePicker: View {
+    @Binding var selection: TimeSignature
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List(TimeSignature.presets) { signature in
+                Button {
+                    selection = signature
+                    dismiss()
+                } label: {
+                    HStack {
+                        Text(verbatim: signature.id)
+                            .font(.title3)
+                            .monospacedDigit()
+                        Spacer()
+                        if signature == selection {
+                            Image(systemName: "checkmark")
+                                .font(.headline)
+                                .foregroundStyle(.tint)
+                        }
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: "拍号 \(signature.spokenTitle)"))
+                .accessibilityAddTraits(signature == selection ? [.isSelected] : [])
+            }
+            .navigationTitle("选择拍号")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Text(verbatim: "取消")
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
     }
 }
