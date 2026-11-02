@@ -19,10 +19,23 @@
 ## 2. 当前分支与提交状态
 
 - 分支：`fix/tuner-lifecycle`
-- 本地 HEAD：`ab0883a Release-0.6.3-metronome-interaction-refinements`
-- 远端：`origin/fix/tuner-lifecycle` = `ab0883a`，**已同步**
+- 本地 HEAD：`a429cd1 Release 0.6.4 tuner audio and VoiceOver fixes`
+- 远端：`origin/fix/tuner-lifecycle` = `5a365eb Fix tuner VoiceOver audio and time-signature labels`
+- 本地比远端多 1 个发布版本提交 `a429cd1`，等待网络恢复后推送并打 `v0.6.4` 标签
 - 工作区：干净
 - 已发布标签：`v0.6.0`、`v0.6.1`、`v0.6.2`、`v0.6.3`
+
+### 2026-11-02 新增未发布修复
+
+- 调音器音频会话由 `.measurement` 改为 `.default`，并加入 `.mixWithOthers`。
+  原因：Apple 明确说明 `.measurement` 会降低输出播放电平；`.playAndRecord`
+  默认也会打断其他音频会话，导致旁白音量被压低。
+- 拍号聚焦和上下清扫统一朗读 `4/4 拍`、`6/8 拍` 等完整形式。
+- 主界面“选择拍号”弹层与“节拍器设置 → 拍号”列表统一使用相同朗读。
+- 提交 `5a365eb` 已推送，GitHub Actions 运行 `41450627369` 全部成功。
+- `0.6.4` 版本号和构建标记已本地提交，但推送时 `github.com:443` 连接失败；
+  尚未发布、尚未真机验证。
+- 旁白触摸震动是否恢复仍需真机验证；当前修复只改变了音频会话属性和朗读文案。
 
 ### 最新发布
 
