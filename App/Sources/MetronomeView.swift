@@ -281,7 +281,6 @@ private struct TimeSignatureSwipeSelector: View {
         .accessibilityLabel(Text(verbatim: "拍号"))
         .accessibilityValue(Text(verbatim: selection.id))
         .accessibilityHint(Text(verbatim: "双击选择拍号，或上下清扫直接调整"))
-        .accessibilityAddTraits(.isAdjustable)
         .accessibilityAdjustableAction { direction in
             switch direction {
             case .increment: step(1)
