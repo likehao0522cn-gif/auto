@@ -63,10 +63,10 @@ struct HomeView: View {
             }
 
             Section("版本") {
-                Text(verbatim: "0.6.2 简化节拍器 2026-11-02")
+                Text(verbatim: "0.6.3 节拍器交互优化 2026-11-02")
                     .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(Text(verbatim: "0.6.2 简化节拍器，构建日期 2026 年 11 月 2 日"))
-                    .accessibilityIdentifier("SIMPLIFIED_METRONOME_2026_11_02")
+                    .accessibilityLabel(Text(verbatim: "0.6.3 节拍器交互优化，构建日期 2026 年 11 月 2 日"))
+                    .accessibilityIdentifier("METRONOME_INTERACTION_2026_11_02")
             }
 
             Section("当前乐器") {
