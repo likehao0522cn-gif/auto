@@ -9,12 +9,19 @@ struct MetronomeView: View {
     @State private var bpmInputError: String?
     @FocusState private var isBPMInputFocused: Bool
 
+    private var timeSignatureBinding: Binding<TimeSignature> {
+        Binding(
+            get: { metronome.configuration.timeSignature },
+            set: { metronome.configuration.timeSignature = $0 }
+        )
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
                 VStack(spacing: 24) {
                     speedReadout
-                    timeSignatureRow
+                    TimeSignatureSwipeSelector(selection: timeSignatureBinding)
                     secondaryActions
                 }
                 .padding(.horizontal, 20)
@@ -76,35 +83,6 @@ struct MetronomeView: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: "速度"))
         .accessibilityValue(Text(verbatim: "\(Int(metronome.configuration.bpm)) BPM，\(metronome.statusText)"))
-    }
-
-    private var timeSignatureRow: some View {
-        NavigationLink {
-            BeatSettingsView()
-        } label: {
-            HStack {
-                Text(verbatim: "拍号")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                Spacer(minLength: 8)
-                Text(verbatim: metronome.configuration.timeSignature.id)
-                    .font(.title3.weight(.semibold))
-                    .monospacedDigit()
-                Image(systemName: "chevron.right")
-                    .font(.footnote)
-                    .foregroundStyle(.tertiary)
-            }
-            .padding(14)
-            .background(
-                Color(uiColor: .secondarySystemGroupedBackground),
-                in: RoundedRectangle(cornerRadius: 14)
-            )
-        }
-        .buttonStyle(.plain)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(verbatim: "拍号"))
-        .accessibilityValue(Text(verbatim: metronome.configuration.timeSignature.id))
-        .accessibilityHint(Text(verbatim: "打开节拍器设置，可修改拍号、重音和细分拍"))
     }
 
     private var secondaryActions: some View {
@@ -253,6 +231,68 @@ struct MetronomeView: View {
             if UIAccessibility.isVoiceOverRunning {
                 UIAccessibility.post(notification: .announcement, argument: message)
             }
+        }
+    }
+}
+
+private struct TimeSignatureSwipeSelector: View {
+    @Binding var selection: TimeSignature
+
+    private var presets: [TimeSignature] { TimeSignature.presets }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Text(verbatim: "拍号")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            Spacer(minLength: 8)
+
+            Image(systemName: "chevron.up")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.tertiary)
+                .accessibilityHidden(true)
+
+            Text(verbatim: selection.id)
+                .font(.title3.weight(.semibold))
+                .monospacedDigit()
+
+            Image(systemName: "chevron.down")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.tertiary)
+                .accessibilityHidden(true)
+        }
+        .padding(14)
+        .background(
+            Color(uiColor: .secondarySystemGroupedBackground),
+            in: RoundedRectangle(cornerRadius: 14)
+        )
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(verbatim: "拍号"))
+        .accessibilityValue(Text(verbatim: selection.id))
+        .accessibilityHint(Text(verbatim: "上下清扫调整拍号"))
+        .accessibilityAddTraits(.isAdjustable)
+        .accessibilityAdjustableAction { direction in
+            switch direction {
+            case .increment: step(1)
+            case .decrement: step(-1)
+            @unknown default: break
+            }
+        }
+    }
+
+    private func step(_ delta: Int) {
+        guard let index = presets.firstIndex(of: selection) else { return }
+        let nextIndex = (index + delta + presets.count) % presets.count
+        let next = presets[nextIndex]
+        guard next != selection else { return }
+
+        selection = next
+        UISelectionFeedbackGenerator().selectionChanged()
+
+        if UIAccessibility.isVoiceOverRunning {
+            UIAccessibility.post(notification: .announcement, argument: "拍号 \(next.id)")
         }
     }
 }
