@@ -28,24 +28,6 @@ struct HomeView: View {
                 }
             }
 
-            Section("快速开始") {
-                NavigationLink {
-                    TunerView()
-                } label: {
-                    Text(verbatim: "快速调音")
-                }
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(Text(verbatim: "快速调音"))
-
-                NavigationLink {
-                    MetronomeView()
-                } label: {
-                    Text(verbatim: "快速节拍")
-                }
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(Text(verbatim: "快速节拍"))
-            }
-
             Section("工具") {
                 NavigationLink {
                     TunerView()

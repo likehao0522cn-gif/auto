@@ -26,11 +26,12 @@ struct MetronomeView: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 20)
-                .padding(.bottom, 16)
+                .padding(.bottom, 8)
             }
             .scrollDismissesKeyboard(.interactively)
 
             transportControls
+                .padding(.bottom, 12)
         }
         .navigationTitle("节拍器")
         .toolbar {
@@ -47,10 +48,12 @@ struct MetronomeView: View {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
                 Button {
-                    isBPMInputFocused = false
+                    applyManualBPMInput()
                 } label: {
-                    Text(verbatim: "完成")
+                    Text(verbatim: "确定")
+                        .fontWeight(.semibold)
                 }
+                .accessibilityLabel(Text(verbatim: "确定并应用速度"))
             }
         }
     }
@@ -99,10 +102,13 @@ struct MetronomeView: View {
                 Button {
                     bpmInput = "\(Int(metronome.configuration.bpm))"
                     bpmInputError = nil
-                    withAnimation {
-                        isShowingBPMInput.toggle()
+                    if !isShowingBPMInput {
+                        withAnimation {
+                            isShowingBPMInput = true
+                        }
                     }
-                    if isShowingBPMInput {
+                    Task { @MainActor in
+                        await Task.yield()
                         isBPMInputFocused = true
                     }
                 } label: {
@@ -216,6 +222,9 @@ struct MetronomeView: View {
             bpmInput = "\(bpm)"
             isBPMInputFocused = false
             metronome.applyManualBPM(Double(bpm))
+            withAnimation {
+                isShowingBPMInput = false
+            }
         case .failure(let error):
             let message: String
             switch error {
@@ -278,9 +287,8 @@ private struct TimeSignatureSwipeSelector: View {
             TimeSignaturePicker(selection: $selection)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(verbatim: "拍号"))
-        .accessibilityValue(Text(verbatim: selection.id))
-        .accessibilityHint(Text(verbatim: "双击选择拍号，或上下清扫直接调整"))
+        .accessibilityLabel(Text(verbatim: "\(selection.id) 拍"))
+        .accessibilityHint(Text(verbatim: "双击选择，或上下清扫直接调整"))
         .accessibilityAdjustableAction { direction in
             switch direction {
             case .increment: step(1)
@@ -300,7 +308,7 @@ private struct TimeSignatureSwipeSelector: View {
         UISelectionFeedbackGenerator().selectionChanged()
 
         if UIAccessibility.isVoiceOverRunning {
-            UIAccessibility.post(notification: .announcement, argument: "拍号 \(next.id)")
+            UIAccessibility.post(notification: .announcement, argument: next.id)
         }
     }
 }

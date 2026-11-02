@@ -5,80 +5,44 @@ struct BeatSettingsView: View {
     @EnvironmentObject private var metronome: MetronomeViewModel
     @EnvironmentObject private var appModel: AppModel
 
-    private var timeSignatureBinding: Binding<TimeSignature> {
-        Binding(
-            get: { metronome.configuration.timeSignature },
-            set: { metronome.configuration.timeSignature = $0 }
-        )
-    }
-
     var body: some View {
         Form {
             Section("节拍") {
-                Picker(selection: timeSignatureBinding) {
-                    ForEach(TimeSignature.presets) { signature in
-                        Text(verbatim: signature.id)
-                            .tag(signature)
-                            .accessibilityLabel(Text(verbatim: "拍号 \(signature.spokenTitle)"))
-                    }
+                NavigationLink {
+                    TimeSignatureSettingsView()
                 } label: {
-                    Text(verbatim: "拍号")
+                    settingRow("拍号", value: metronome.configuration.timeSignature.id)
                 }
-                .pickerStyle(.inline)
-            }
 
-            Section("重音") {
-                Picker(selection: $metronome.configuration.accentMode) {
-                    ForEach(AccentMode.allCases) { accent in
-                        Text(verbatim: accent.title)
-                            .tag(accent)
-                            .accessibilityLabel(Text(verbatim: accent.spokenTitle))
-                    }
+                NavigationLink {
+                    AccentSettingsView()
                 } label: {
-                    Text(verbatim: "重音")
+                    settingRow("重音", value: metronome.configuration.accentMode.title)
                 }
-                .pickerStyle(.inline)
-            }
 
-            Section("细分拍") {
-                Picker(selection: $metronome.configuration.subdivision) {
-                    ForEach(Subdivision.allCases) { subdivision in
-                        Text(verbatim: subdivision.title)
-                            .tag(subdivision)
-                            .accessibilityLabel(Text(verbatim: subdivision.spokenTitle))
-                    }
+                NavigationLink {
+                    SubdivisionSettingsView()
                 } label: {
-                    Text(verbatim: "细分拍")
+                    settingRow("细分拍", value: metronome.configuration.subdivision.title)
                 }
-                .pickerStyle(.inline)
             }
 
             Section("声音") {
-                Picker(selection: $metronome.timbre) {
-                    ForEach(MetronomeTimbre.allCases) { timbre in
-                        Text(verbatim: timbre.title)
-                            .tag(timbre)
-                            .accessibilityLabel(Text(verbatim: timbre.spokenTitle))
-                    }
+                NavigationLink {
+                    MetronomeTimbreSettingsView()
                 } label: {
-                    Text(verbatim: "节拍器音色")
+                    settingRow("音色", value: metronome.timbre.title)
                 }
-                .pickerStyle(.inline)
 
                 Toggle(isOn: $metronome.hapticsEnabled) {
-                    Text(verbatim: "播放时使用触觉打拍")
+                    Text(verbatim: "播放时触觉打拍")
                 }
-
-                Text(verbatim: "锁屏和后台播放时，触觉不保证持续可用；音频点击声始终是主要节拍提示。")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
             }
 
             Section("测速") {
                 Toggle(isOn: $appModel.tapTempoCountdownHintEnabled) {
                     Text(verbatim: "显示还差几拍提示")
                 }
-                .accessibilityLabel(Text(verbatim: "显示还差几拍提示"))
                 .accessibilityHint(Text(verbatim: "开启时显示距离第一个速度结果还差几拍"))
             }
 
@@ -88,10 +52,147 @@ struct BeatSettingsView: View {
                 } label: {
                     Text(verbatim: "节拍器帮助")
                 }
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(Text(verbatim: "节拍器帮助"))
             }
         }
         .navigationTitle("节拍器设置")
+    }
+
+    private func settingRow(_ title: String, value: String) -> some View {
+        HStack {
+            Text(verbatim: title)
+            Spacer()
+            Text(verbatim: value)
+                .foregroundStyle(.secondary)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(verbatim: title))
+        .accessibilityValue(Text(verbatim: value))
+    }
+}
+
+private struct TimeSignatureSettingsView: View {
+    @EnvironmentObject private var metronome: MetronomeViewModel
+
+    var body: some View {
+        List {
+            ForEach(TimeSignature.presets) { signature in
+                Button {
+                    metronome.configuration.timeSignature = signature
+                } label: {
+                    HStack {
+                        Text(verbatim: signature.id)
+                            .monospacedDigit()
+                        Spacer()
+                        if metronome.configuration.timeSignature == signature {
+                            Image(systemName: "checkmark")
+                                .foregroundStyle(.tint)
+                        }
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: signature.spokenTitle))
+                .accessibilityAddTraits(
+                    metronome.configuration.timeSignature == signature ? [.isSelected] : []
+                )
+            }
+        }
+        .navigationTitle("拍号")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+private struct AccentSettingsView: View {
+    @EnvironmentObject private var metronome: MetronomeViewModel
+
+    var body: some View {
+        List {
+            ForEach(AccentMode.allCases) { accent in
+                Button {
+                    metronome.configuration.accentMode = accent
+                } label: {
+                    HStack {
+                        Text(verbatim: accent.title)
+                        Spacer()
+                        if metronome.configuration.accentMode == accent {
+                            Image(systemName: "checkmark")
+                                .foregroundStyle(.tint)
+                        }
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: accent.spokenTitle))
+                .accessibilityAddTraits(
+                    metronome.configuration.accentMode == accent ? [.isSelected] : []
+                )
+            }
+        }
+        .navigationTitle("重音")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+private struct SubdivisionSettingsView: View {
+    @EnvironmentObject private var metronome: MetronomeViewModel
+
+    var body: some View {
+        List {
+            ForEach(Subdivision.allCases) { subdivision in
+                Button {
+                    metronome.configuration.subdivision = subdivision
+                } label: {
+                    HStack {
+                        Text(verbatim: subdivision.title)
+                        Spacer()
+                        if metronome.configuration.subdivision == subdivision {
+                            Image(systemName: "checkmark")
+                                .foregroundStyle(.tint)
+                        }
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: subdivision.spokenTitle))
+                .accessibilityAddTraits(
+                    metronome.configuration.subdivision == subdivision ? [.isSelected] : []
+                )
+            }
+        }
+        .navigationTitle("细分拍")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+private struct MetronomeTimbreSettingsView: View {
+    @EnvironmentObject private var metronome: MetronomeViewModel
+
+    var body: some View {
+        List {
+            ForEach(MetronomeTimbre.allCases) { timbre in
+                Button {
+                    metronome.timbre = timbre
+                } label: {
+                    HStack {
+                        Text(verbatim: timbre.title)
+                        Spacer()
+                        if metronome.timbre == timbre {
+                            Image(systemName: "checkmark")
+                                .foregroundStyle(.tint)
+                        }
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: timbre.spokenTitle))
+                .accessibilityAddTraits(metronome.timbre == timbre ? [.isSelected] : [])
+            }
+        }
+        .navigationTitle("节拍器音色")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
