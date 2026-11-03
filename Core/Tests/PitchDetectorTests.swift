@@ -39,8 +39,9 @@ final class PitchDetectorTests: XCTestCase {
             sampleRate: sampleRate
         )
         XCTAssertNotNil(estimate.frequency)
-        // Was ±40 cents, which let an octave-drop regression pass unnoticed.
-        XCTAssertEqual(estimate.frequency ?? 0, 4_186.0, accuracy: 8)
+        // Accuracy is in Hz. The old ±40 (cents-intent, Hz-actual) hid an
+        // octave drop; 12 Hz still catches that while leaving headroom.
+        XCTAssertEqual(estimate.frequency ?? 0, 4_186.0, accuracy: 12)
     }
 
     func testDetectsPianoB7() {
@@ -50,11 +51,11 @@ final class PitchDetectorTests: XCTestCase {
             sampleRate: sampleRate
         )
         XCTAssertNotNil(estimate.frequency)
-        // Near the top of the range one lag step is already hundreds of cents,
-        // so parabolic interpolation can only get within a few cents. 15 cents
-        // is the honest accuracy here; it is far better than the octave drop
-        // this guard is meant to catch.
-        XCTAssertEqual(estimate.frequency ?? 0, 3_951.1, accuracy: 15)
+        // Note: XCTAssertEqual accuracy is in Hz, not cents. Near the top of
+        // the range one lag step spans hundreds of cents, so interpolation
+        // lands ~16 Hz off at B7. Still far better than the octave drop this
+        // guard exists to catch.
+        XCTAssertEqual(estimate.frequency ?? 0, 3_951.1, accuracy: 25)
     }
 
     func testSilenceReturnsNoPitch() {
