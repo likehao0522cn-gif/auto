@@ -143,7 +143,7 @@ final class MetronomeViewModel: ObservableObject {
             beginPlaybackFeedback()
         } catch {
             isPlaying = false
-            errorMessage = error.localizedDescription
+            errorMessage = "无法开始节拍器，请检查音频是否被其他应用占用，或稍后再试。"
             statusText = "无法开始节拍器"
         }
     }

@@ -338,7 +338,7 @@ final class TunerViewModel: ObservableObject {
             }
         } catch {
             isSpeechActive = false
-            errorMessage = error.localizedDescription
+            errorMessage = "参考音播放失败，请稍后再试。"
             statusText = "参考音播放失败"
         }
     }
@@ -388,7 +388,7 @@ final class TunerViewModel: ObservableObject {
         } catch {
             isListening = false
             isPaused = true
-            errorMessage = error.localizedDescription
+            errorMessage = TunerAudioEngineError.chineseMessage(for: error)
             statusText = "无法开始聆听"
         }
     }

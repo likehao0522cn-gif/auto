@@ -16,6 +16,15 @@ enum TunerAudioEngineError: LocalizedError {
             return "调音器当前没有在聆听。"
         }
     }
+
+    /// AVAudioEngine and AVAudioSession throw English-only NSError messages.
+    /// Never surface those directly to the user or VoiceOver.
+    static func chineseMessage(for error: Error) -> String {
+        if let engineError = error as? TunerAudioEngineError {
+            return engineError.errorDescription ?? "无法开始聆听，请稍后再试。"
+        }
+        return "无法开始聆听，请检查麦克风是否被其他应用占用，或稍后再试。"
+    }
 }
 
 final class TunerAudioEngine {

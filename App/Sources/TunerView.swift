@@ -11,6 +11,7 @@ struct TunerView: View {
     @State private var hasAppeared = false
     @State private var restartTask: Task<Void, Never>?
     @State private var isShowingHelp = false
+    @State private var isShowingInstrumentPicker = false
 
     var body: some View {
         ScrollView {
@@ -28,13 +29,17 @@ struct TunerView: View {
                 .accessibilityLabel(Text(verbatim: "检测模式"))
 
                 VStack(spacing: 0) {
-                    NavigationLink {
-                        InstrumentPickerView()
+                    Button {
+                        viewModel.pauseForOverlay()
+                        isShowingInstrumentPicker = true
                     } label: {
                         selectorRow(title: "乐器", value: appModel.selectedPreset.displayName)
                     }
+                    .buttonStyle(.plain)
                     .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(Text(verbatim: "乐器：\(appModel.selectedPreset.displayName)"))
+                    .accessibilityLabel(Text(verbatim: "乐器"))
+                    .accessibilityValue(Text(verbatim: appModel.selectedPreset.displayName))
+                    .accessibilityHint(Text(verbatim: "双击选择乐器"))
 
                     if !appModel.selectedPreset.strings.isEmpty {
                         Divider()
@@ -171,6 +176,12 @@ struct TunerView: View {
         }
         .onChange(of: mode) { _, _ in
             scheduleRestart(announceEntry: false)
+        }
+        .sheet(isPresented: $isShowingInstrumentPicker, onDismiss: {
+            guard hasAppeared, viewModel.isPaused else { return }
+            viewModel.resume()
+        }) {
+            InstrumentPickerView()
         }
         .sheet(isPresented: $isShowingHelp, onDismiss: {
             guard hasAppeared, viewModel.isPaused else { return }
