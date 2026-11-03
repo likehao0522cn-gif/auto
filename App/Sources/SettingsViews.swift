@@ -89,41 +89,31 @@ struct TuningSettingsView: View {
             }
 
             Section("准音容差") {
-                Picker(selection: $appModel.toleranceCents) {
-                    Text(verbatim: "上下 1 音分").tag(1.0)
-                    Text(verbatim: "上下 3 音分").tag(3.0)
-                    Text(verbatim: "上下 5 音分").tag(5.0)
-                } label: {
-                    Text(verbatim: "准音容差")
-                }
-                .pickerStyle(.segmented)
-                .accessibilityLabel(Text(verbatim: "准音容差"))
+                AdjustableValueRow(
+                    title: "准音容差",
+                    value: $appModel.toleranceCents,
+                    range: 1...5,
+                    step: 2,
+                    valueLabel: { "\(Int($0)) 音分" }
+                )
             }
 
             Section("音名读法") {
-                Picker(selection: $appModel.noteNamingStyle) {
-                    ForEach(NoteNamingStyle.allCases) { style in
-                        Text(verbatim: style.title)
-                            .tag(style)
-                            .accessibilityLabel(Text(verbatim: style.spokenTitle))
-                    }
-                } label: {
-                    Text(verbatim: "音名读法")
-                }
-                .pickerStyle(.inline)
+                SwipeChoiceRow(
+                    title: "音名读法",
+                    options: NoteNamingStyle.allCases,
+                    selection: $appModel.noteNamingStyle,
+                    label: { $0.title }
+                )
             }
 
             Section("自动更新反馈") {
-                Picker(selection: $appModel.autoUpdateFeedbackMode) {
-                    ForEach(AutoUpdateFeedbackMode.allCases) { mode in
-                        Text(verbatim: mode.title)
-                            .tag(mode)
-                            .accessibilityLabel(Text(verbatim: mode.spokenTitle))
-                    }
-                } label: {
-                    Text(verbatim: "自动更新反馈")
-                }
-                .pickerStyle(.inline)
+                SwipeChoiceRow(
+                    title: "自动更新反馈",
+                    options: AutoUpdateFeedbackMode.allCases,
+                    selection: $appModel.autoUpdateFeedbackMode,
+                    label: { $0.title }
+                )
 
                 Text(verbatim: "首次检测结果始终播报完整音名和音分。")
                     .font(.footnote)
@@ -204,16 +194,12 @@ struct SpeechSettingsView: View {
     var body: some View {
         Form {
             Section("语音来源") {
-                Picker(selection: $appModel.speechOutputMode) {
-                    ForEach(SpeechOutputMode.allCases) { mode in
-                        Text(verbatim: mode.title)
-                            .tag(mode)
-                            .accessibilityLabel(Text(verbatim: mode.spokenTitle))
-                    }
-                } label: {
-                    Text(verbatim: "播报方式")
-                }
-                .pickerStyle(.inline)
+                SwipeChoiceRow(
+                    title: "播报方式",
+                    options: SpeechOutputMode.allCases,
+                    selection: $appModel.speechOutputMode,
+                    label: { $0.shortTitle }
+                )
 
                 Text(verbatim: appModel.speechOutputMode.detail)
                     .font(.footnote)

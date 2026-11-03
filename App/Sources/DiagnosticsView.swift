@@ -28,8 +28,8 @@ struct DiagnosticsView: View {
                 diagnosticRow("更新反馈", value: appModel.autoUpdateFeedbackMode.title)
                 diagnosticRow("参考音音色", value: appModel.referenceToneTimbre.title)
                 diagnosticRow("播报方式", value: appModel.speechOutputMode.title)
-                diagnosticRow("语音速度", value: SpeechSettings.rateLabel(appModel.speechRate))
-                diagnosticRow("语音音调", value: SpeechSettings.pitchLabel(appModel.speechPitch))
+                diagnosticRow("语音速度", value: "\(SpeechSettings.rateLabel(appModel.speechRate))，范围 \(String(format: "%.2f", SpeechSettings.minimumRate)) 到 \(String(format: "%.2f", SpeechSettings.maximumRate))")
+                diagnosticRow("语音音调", value: "\(SpeechSettings.pitchLabel(appModel.speechPitch))，范围 \(String(format: "%.2f", SpeechSettings.minimumPitch)) 到 \(String(format: "%.2f", SpeechSettings.maximumPitch))")
             }
 
             Section("检测与调度") {
@@ -132,8 +132,8 @@ struct DiagnosticsView: View {
         更新反馈: \(appModel.autoUpdateFeedbackMode.title)
         参考音音色: \(appModel.referenceToneTimbre.title)
         播报方式: \(appModel.speechOutputMode.title)
-        语音速度: \(SpeechSettings.rateLabel(appModel.speechRate))
-        语音音调: \(SpeechSettings.pitchLabel(appModel.speechPitch))
+        语音速度: \(SpeechSettings.rateLabel(appModel.speechRate))，范围 \(String(format: "%.2f", SpeechSettings.minimumRate)) 到 \(String(format: "%.2f", SpeechSettings.maximumRate))
+        语音音调: \(SpeechSettings.pitchLabel(appModel.speechPitch))，范围 \(String(format: "%.2f", SpeechSettings.minimumPitch)) 到 \(String(format: "%.2f", SpeechSettings.maximumPitch))
         检测频率: 调音器页面实时显示
         检测置信度: 调音器页面实时显示
         节拍器调度: 基于音频采样时间，暂无偏差数据

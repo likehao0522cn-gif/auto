@@ -29,7 +29,7 @@ struct AdjustableValueRow: View {
                 adjustButton(
                     symbol: "minus",
                     text: "减",
-                    label: "减小\(title)",
+                    label: "减",
                     enabled: canDecrease,
                     delta: -step
                 )
@@ -49,11 +49,19 @@ struct AdjustableValueRow: View {
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(Text(verbatim: title))
                     .accessibilityValue(Text(verbatim: valueLabel(value)))
+                    .accessibilityHint(Text(verbatim: "上下清扫调整"))
+                    .accessibilityAdjustableAction { direction in
+                        switch direction {
+                        case .increment: adjust(by: step)
+                        case .decrement: adjust(by: -step)
+                        @unknown default: break
+                        }
+                    }
 
                 adjustButton(
                     symbol: "plus",
                     text: "加",
-                    label: "增大\(title)",
+                    label: "加",
                     enabled: canIncrease,
                     delta: step
                 )
@@ -92,7 +100,7 @@ struct AdjustableValueRow: View {
         .disabled(!enabled)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: label))
-        .accessibilityHint(Text(verbatim: "当前\(valueLabel(value))"))
+        .accessibilityValue(Text(verbatim: valueLabel(value)))
     }
 
     private func adjust(by delta: Double) {
@@ -107,8 +115,50 @@ struct AdjustableValueRow: View {
         if UIAccessibility.isVoiceOverRunning {
             UIAccessibility.post(
                 notification: .announcement,
-                argument: "\(title)，\(valueLabel(adjusted))"
+                argument: valueLabel(adjusted)
             )
+        }
+    }
+}
+
+/// A compact summary row whose value can be changed by VoiceOver vertical
+/// swipes. Mirrors AdjustableValueRow without the minus/plus buttons.
+struct SwipeChoiceRow<Option: Hashable>: View {
+    let title: String
+    let options: [Option]
+    @Binding var selection: Option
+    let label: (Option) -> String
+
+    var body: some View {
+        HStack {
+            Text(verbatim: title)
+            Spacer()
+            Text(verbatim: label(selection))
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.trailing)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(verbatim: title))
+        .accessibilityValue(Text(verbatim: label(selection)))
+        .accessibilityHint(Text(verbatim: "上下清扫调整"))
+        .accessibilityAdjustableAction { direction in
+            switch direction {
+            case .increment: step(1)
+            case .decrement: step(-1)
+            @unknown default: break
+            }
+        }
+    }
+
+    private func step(_ delta: Int) {
+        guard let index = options.firstIndex(of: selection) else { return }
+        let nextIndex = (index + delta + options.count) % options.count
+        let next = options[nextIndex]
+        guard next != selection else { return }
+        selection = next
+        UISelectionFeedbackGenerator().selectionChanged()
+        if UIAccessibility.isVoiceOverRunning {
+            UIAccessibility.post(notification: .announcement, argument: label(next))
         }
     }
 }

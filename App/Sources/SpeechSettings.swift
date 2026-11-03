@@ -18,6 +18,15 @@ enum SpeechOutputMode: String, CaseIterable, Identifiable, Hashable {
         }
     }
 
+    /// Compact label for the swipe row; detail stays in the footnote.
+    var shortTitle: String {
+        switch self {
+        case .appVoice: return "应用语音"
+        case .automatic: return "自动"
+        case .voiceOver: return "旁白播报"
+        }
+    }
+
     var detail: String {
         switch self {
         case .appVoice:
@@ -101,31 +110,16 @@ struct SpeechSettings {
         defaults.set(outputMode.rawValue, forKey: Keys.outputMode)
     }
 
+    /// Numeric-only label: other wording made VoiceOver read long,
+    /// inconsistent phrases and cluttered the compact adjuster.
     static func rateLabel(_ rate: Double) -> String {
         let clamped = min(maximumRate, max(minimumRate, rate))
-        let descriptor: String
-        switch clamped {
-        case ..<0.40: descriptor = "慢"
-        case ..<0.46: descriptor = "稍慢"
-        case ..<0.53: descriptor = "标准"
-        case ..<0.61: descriptor = "稍快"
-        case ..<0.85: descriptor = "快"
-        default: descriptor = "很快"
-        }
-        return "\(descriptor)，\(String(format: "%.2f", clamped))"
+        return String(format: "%.2f", clamped)
     }
 
     static func pitchLabel(_ pitch: Double) -> String {
         let clamped = min(maximumPitch, max(minimumPitch, pitch))
-        let descriptor: String
-        switch clamped {
-        case ..<0.90: descriptor = "低"
-        case ..<0.97: descriptor = "稍低"
-        case ..<1.05: descriptor = "标准"
-        case ..<1.13: descriptor = "稍高"
-        default: descriptor = "高"
-        }
-        return "\(descriptor)，\(String(format: "%.2f", clamped))"
+        return String(format: "%.2f", clamped)
     }
 
     static func volumeLabel(_ volume: Double) -> String {
