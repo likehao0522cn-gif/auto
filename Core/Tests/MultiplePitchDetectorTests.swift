@@ -81,6 +81,29 @@ final class MultiplePitchDetectorTests: XCTestCase {
         XCTAssertTrue(result.isMultiplePitches)
     }
 
+    func testInharmonicPianoLikeToneIsNotReportedAsMultiplePitches() {
+        // Piano partials are stretched, not exact integer multiples, and room
+        // reflections add energy between them. This used to trip the warning.
+        let samples = (0..<4_096).map { index in
+            let time = Double(index) / sampleRate
+            return Float(
+                sin(2 * Double.pi * 261.63 * time) * 0.30
+                + sin(2 * Double.pi * 523.9 * time) * 0.22
+                + sin(2 * Double.pi * 786.9 * time) * 0.18
+                + sin(2 * Double.pi * 1_050.4 * time) * 0.12
+            )
+        }
+        let result = MultiplePitchDetector.detect(
+            samples: samples,
+            sampleRate: sampleRate,
+            primaryFrequency: 261.63,
+            primaryConfidence: 0.9,
+            rms: 0.3
+        )
+
+        XCTAssertFalse(result.isMultiplePitches)
+    }
+
     func testLowConfidenceIsNotReportedAsMultiplePitches() {
         let result = MultiplePitchDetector.detect(
             samples: sine(440),
