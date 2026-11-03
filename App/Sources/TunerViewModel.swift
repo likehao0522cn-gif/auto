@@ -70,6 +70,11 @@ final class TunerViewModel: ObservableObject {
     private var lastPresentedReading: TuningReading?
     private var isShowingMultiplePitchWarning = false
     private var lastLiveReadingPublishAt: Date = .distantPast
+    /// Rolling estimate of the room's background level. Raised slowly while
+    /// quiet, never by loud musical attacks, so tuning stays usable in noisy
+    /// rooms instead of treating constant hiss as a played note.
+    private var noiseFloorRMS: Double = 0.002
+    private var noiseFloorInitialized = false
     private var isSpeechActive = false
     /// True while the app itself is producing sound (earcon or reference tone).
     /// Those frames must be ignored by pitch analysis; VoiceOver speech must not.
@@ -501,8 +506,14 @@ final class TunerViewModel: ObservableObject {
         guard isListening, !isPaused, !isAppTonePlaying else { return }
 
         let now = Date()
+        updateNoiseFloor(rms: estimate.rms)
 
-        guard let frequency = estimate.frequency, estimate.isReliable else {
+        let adaptiveMinimumRMS = min(0.02, max(0.0025, noiseFloorRMS * 2.5))
+        let reliable = estimate.frequency != nil
+            && estimate.confidence >= 0.62
+            && estimate.rms >= adaptiveMinimumRMS
+
+        guard let frequency = estimate.frequency, reliable else {
             let silenceDuration = lastSoundAt.map { now.timeIntervalSince($0) } ?? .infinity
             if silenceDuration >= 0.3 {
                 resetPluck()
@@ -520,7 +531,12 @@ final class TunerViewModel: ObservableObject {
         if isSpeechActive {
             isOnset = pluckStartedAt == nil || (previousRMS < 0.02 && estimate.rms >= 0.05)
         } else {
-            isOnset = pluckStartedAt == nil || (previousRMS < 0.008 && estimate.rms >= 0.012)
+            // Scale the attack requirement with the room noise so background
+            // rumble cannot start a tuning event on its own.
+            let quietThreshold = max(0.008, adaptiveMinimumRMS)
+            let attackThreshold = max(0.012, adaptiveMinimumRMS * 1.8)
+            isOnset = pluckStartedAt == nil
+                || (previousRMS < quietThreshold && estimate.rms >= attackThreshold)
         }
         if isOnset {
             pluckStartedAt = now
@@ -681,6 +697,22 @@ final class TunerViewModel: ObservableObject {
         speech.speak(text)
     }
 
+    private func updateNoiseFloor(rms: Double) {
+        guard rms.isFinite, rms >= 0 else { return }
+        if !noiseFloorInitialized {
+            noiseFloorRMS = max(0.0015, rms)
+            noiseFloorInitialized = true
+            return
+        }
+        // Fast to rise when the room gets noisier, very slow to fall so a
+        // sustained note cannot lower the gate under itself.
+        if rms > noiseFloorRMS {
+            noiseFloorRMS += (rms - noiseFloorRMS) * 0.08
+        } else {
+            noiseFloorRMS += (rms - noiseFloorRMS) * 0.01
+        }
+    }
+
     private func resetPluck() {
         previousRMS = 0
         pluckStartedAt = nil
@@ -694,6 +726,7 @@ final class TunerViewModel: ObservableObject {
 
     private func resetDetectionState() {
         resetPluck()
+        noiseFloorInitialized = false
         lastSoundAt = nil
         lastLiveReadingPublishAt = .distantPast
     }

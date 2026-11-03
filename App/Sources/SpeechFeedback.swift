@@ -19,8 +19,11 @@ final class SpeechFeedback: NSObject, ObservableObject, AVSpeechSynthesizerDeleg
         settings: SpeechSettings? = nil
     ) {
         let settings = settings ?? SpeechSettings.load()
-        let wasSpeaking = synthesizer.isSpeaking
-        if wasSpeaking {
+        // VoiceOver announcements never touch the synthesizer, so an active
+        // announcement must also count as "speaking" or the new one is posted
+        // too early and its opening words get dropped.
+        let wasSpeaking = synthesizer.isSpeaking || voiceOverFinishTask != nil
+        if synthesizer.isSpeaking {
             synthesizer.stopSpeaking(at: .immediate)
         }
         voiceOverFinishTask?.cancel()
@@ -100,8 +103,9 @@ final class SpeechFeedback: NSObject, ObservableObject, AVSpeechSynthesizerDeleg
         let estimatedDuration = min(5.0, 0.7 + Double(text.count) * 0.06)
         voiceOverFinishTask = Task { @MainActor [weak self] in
             try? await Task.sleep(for: .seconds(estimatedDuration))
-            guard !Task.isCancelled else { return }
-            self?.onFinish?()
+            guard !Task.isCancelled, let self else { return }
+            self.voiceOverFinishTask = nil
+            self.onFinish?()
         }
     }
 

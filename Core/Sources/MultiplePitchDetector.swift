@@ -57,7 +57,7 @@ public enum MultiplePitchDetector {
                 let nearestHarmonic = (1...8).map { Double($0) }.min {
                     abs(harmonicRatio - $0) < abs(harmonicRatio - $1)
                 } ?? 2
-                return abs(harmonicRatio - nearestHarmonic) > 0.06
+                return abs(harmonicRatio - nearestHarmonic) > 0.10
         }
         let peaks = independentCandidates
             .filter { candidate -> Bool in
@@ -71,8 +71,13 @@ public enum MultiplePitchDetector {
             }
         let secondStrongest = peaks.max { $0.1 < $1.1 }
 
+        // A single struck string or piano key produces a dense harmonic
+        // spectrum plus room reflections. Requiring a competing partial to be
+        // nearly as strong as the fundamental removes most of those false
+        // "multiple notes" warnings while still catching two real pitches.
         guard let secondStrongest,
-              secondStrongest.1 > fundamentalMagnitude * 0.5 else {
+              secondStrongest.1 > fundamentalMagnitude * 0.85,
+              secondStrongest.1 > 0.02 else {
             return MultiplePitchEstimate(
                 isMultiplePitches: false,
                 strongestFrequency: primaryFrequency,
