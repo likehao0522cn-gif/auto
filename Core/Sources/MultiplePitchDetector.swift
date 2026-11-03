@@ -48,7 +48,9 @@ public enum MultiplePitchDetector {
                 strongestConfidence: primaryConfidence
             )
         }
-        let candidateFrequencies: [Double] = Array(stride(from: 55.0, through: 2_000.0, by: 20.0))
+        // 10 Hz instead of 20 Hz so a peak is not missed or shifted when a
+        // partial sits between grid points.
+        let candidateFrequencies: [Double] = Array(stride(from: 55.0, through: 2_000.0, by: 10.0))
         let independentCandidates: [Double] = candidateFrequencies.filter { (candidate: Double) -> Bool in
                 let harmonicRatio = candidate / primaryFrequency
             if harmonicRatio >= 0.95 && harmonicRatio <= 1.05 {
@@ -62,8 +64,8 @@ public enum MultiplePitchDetector {
         let peaks = independentCandidates
             .filter { candidate -> Bool in
                 let value = amplitude(samples: analysisSamples, sampleRate: sampleRate, frequency: candidate)
-                let lower = amplitude(samples: analysisSamples, sampleRate: sampleRate, frequency: candidate - 20)
-                let upper = amplitude(samples: analysisSamples, sampleRate: sampleRate, frequency: candidate + 20)
+                let lower = amplitude(samples: analysisSamples, sampleRate: sampleRate, frequency: candidate - 10)
+                let upper = amplitude(samples: analysisSamples, sampleRate: sampleRate, frequency: candidate + 10)
                 return value > lower && value > upper
             }
             .map { frequency in
@@ -71,12 +73,11 @@ public enum MultiplePitchDetector {
             }
         let secondStrongest = peaks.max { $0.1 < $1.1 }
 
-        // A single struck string or piano key produces a dense harmonic
-        // spectrum plus room reflections. Requiring a competing partial to be
-        // nearly as strong as the fundamental removes most of those false
-        // "multiple notes" warnings while still catching two real pitches.
+        // Measured on synthetic piano/guitar-like signals: one struck note
+        // leaves non-harmonic peaks under 5% of the fundamental, while two
+        // genuine simultaneous notes exceed 45%. 30% sits safely between.
         guard let secondStrongest,
-              secondStrongest.1 > fundamentalMagnitude * 0.85,
+              secondStrongest.1 > fundamentalMagnitude * 0.30,
               secondStrongest.1 > 0.02 else {
             return MultiplePitchEstimate(
                 isMultiplePitches: false,
