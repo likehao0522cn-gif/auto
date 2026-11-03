@@ -242,7 +242,7 @@ struct SpeechSettingsView: View {
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(Text(verbatim: "试听当前语音"))
 
-                Text(verbatim: "语速、音调和音量只影响应用语音；选择旁白播报时，应用会使用系统旁白的语音和语速。")
+                Text(verbatim: "数值是相对百分比，100% 是最大值。语速、音调和音量只影响应用语音；选择旁白播报时，应用会使用系统旁白的语音和语速。")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }

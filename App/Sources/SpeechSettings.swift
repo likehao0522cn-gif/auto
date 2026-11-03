@@ -110,16 +110,16 @@ struct SpeechSettings {
         defaults.set(outputMode.rawValue, forKey: Keys.outputMode)
     }
 
-    /// Numeric-only label: other wording made VoiceOver read long,
-    /// inconsistent phrases and cluttered the compact adjuster.
+    /// Numeric-only label. Percentages are easier to understand by ear than
+    /// fractional values such as 0.55, and read consistently in Chinese.
     static func rateLabel(_ rate: Double) -> String {
         let clamped = min(maximumRate, max(minimumRate, rate))
-        return String(format: "%.2f", clamped)
+        return "\(Int((clamped * 100).rounded()))%"
     }
 
     static func pitchLabel(_ pitch: Double) -> String {
         let clamped = min(maximumPitch, max(minimumPitch, pitch))
-        return String(format: "%.2f", clamped)
+        return "\(Int((clamped * 100).rounded()))%"
     }
 
     static func volumeLabel(_ volume: Double) -> String {
