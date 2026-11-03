@@ -39,7 +39,18 @@ final class PitchDetectorTests: XCTestCase {
             sampleRate: sampleRate
         )
         XCTAssertNotNil(estimate.frequency)
-        XCTAssertEqual(estimate.frequency ?? 0, 4_186.0, accuracy: 40)
+        // Was ±40 cents, which let an octave-drop regression pass unnoticed.
+        XCTAssertEqual(estimate.frequency ?? 0, 4_186.0, accuracy: 8)
+    }
+
+    func testDetectsPianoB7() {
+        let detector = PitchDetector()
+        let estimate = detector.detect(
+            samples: sine(frequency: 3_951.1, amplitude: 0.4),
+            sampleRate: sampleRate
+        )
+        XCTAssertNotNil(estimate.frequency)
+        XCTAssertEqual(estimate.frequency ?? 0, 3_951.1, accuracy: 12)
     }
 
     func testSilenceReturnsNoPitch() {

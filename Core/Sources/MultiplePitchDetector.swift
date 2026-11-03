@@ -22,9 +22,14 @@ public enum MultiplePitchDetector {
         sampleRate: Double,
         primaryFrequency: Double?,
         primaryConfidence: Double,
-        rms: Double
+        rms: Double,
+        isPitchSteady: Bool = true
     ) -> MultiplePitchEstimate {
-        guard let primaryFrequency,
+        // Real instruments (erhu, low piano strings) have unstable partials and
+        // beat effects. Calling those "multiple notes" is a false positive, so
+        // only look for a second pitch once the primary reading is steady.
+        guard isPitchSteady,
+              let primaryFrequency,
               primaryConfidence >= 0.55,
               rms >= 0.002,
               samples.count >= 2_048 else {
@@ -50,16 +55,31 @@ public enum MultiplePitchDetector {
         }
         // 10 Hz instead of 20 Hz so a peak is not missed or shifted when a
         // partial sits between grid points.
-        let candidateFrequencies: [Double] = Array(stride(from: 55.0, through: 2_000.0, by: 10.0))
+        // Search a band around the fundamental. A real second note is usually
+        // within a few octaves; scanning to 2 kHz let distant partials win.
+        let lowerBound = max(55.0, primaryFrequency * 0.5)
+        let upperBound = min(2_000.0, primaryFrequency * 4.0)
+        let candidateFrequencies: [Double] = stride(
+            from: lowerBound,
+            through: max(lowerBound, upperBound),
+            by: 10.0
+        ).map { $0 }
         let independentCandidates: [Double] = candidateFrequencies.filter { (candidate: Double) -> Bool in
-                let harmonicRatio = candidate / primaryFrequency
+            let harmonicRatio = candidate / primaryFrequency
             if harmonicRatio >= 0.95 && harmonicRatio <= 1.05 {
                 return false
             }
-                let nearestHarmonic = (1...8).map { Double($0) }.min {
-                    abs(harmonicRatio - $0) < abs(harmonicRatio - $1)
-                } ?? 2
-                return abs(harmonicRatio - nearestHarmonic) > 0.10
+            // Sub-harmonics matter as much as harmonics. A weak fundamental
+            // makes YIN lock onto a partial, and the true fundamental then
+            // appears as a 1/2 or 1/3 ratio; without this it was counted as an
+            // independent note, which is what flagged single low notes.
+            if harmonicRatio <= 0.75 {
+                return false
+            }
+            let nearestHarmonic = (1...8).map { Double($0) }.min {
+                abs(harmonicRatio - $0) < abs(harmonicRatio - $1)
+            } ?? 2
+            return abs(harmonicRatio - nearestHarmonic) > 0.10
         }
         let peaks = independentCandidates
             .filter { candidate -> Bool in
@@ -76,8 +96,11 @@ public enum MultiplePitchDetector {
         // Measured on synthetic piano/guitar-like signals: one struck note
         // leaves non-harmonic peaks under 5% of the fundamental, while two
         // genuine simultaneous notes exceed 45%. 30% sits safely between.
+        // Low strings and bowed instruments leak a lot of energy between
+        // harmonics, so the bar is higher there.
+        let requiredRatio = primaryFrequency < 120 ? 0.55 : 0.30
         guard let secondStrongest,
-              secondStrongest.1 > fundamentalMagnitude * 0.30,
+              secondStrongest.1 > fundamentalMagnitude * requiredRatio,
               secondStrongest.1 > 0.02 else {
             return MultiplePitchEstimate(
                 isMultiplePitches: false,

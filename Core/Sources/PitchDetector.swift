@@ -25,7 +25,9 @@ public struct PitchDetector: Sendable {
 
     public init(
         minFrequency: Double = 27.5,
-        maxFrequency: Double = 4200,
+        // C8 is about 4186 Hz; the old ceiling left almost no headroom, so
+        // real high notes were rejected as out of range.
+        maxFrequency: Double = 5000,
         threshold: Double = 0.12,
         sampleStep: Int = 8
     ) {
@@ -81,7 +83,7 @@ public struct PitchDetector: Sendable {
         }
 
         var candidate: Int?
-        for tau in max(tauMin + 1, 2)...(tauMax - 1) {
+        for tau in max(tauMin, 2)...(tauMax - 1) {
             let isLocalMinimum = normalized[tau] <= normalized[tau - 1]
                 && normalized[tau] <= normalized[tau + 1]
             if isLocalMinimum && normalized[tau] < threshold {
@@ -103,7 +105,7 @@ public struct PitchDetector: Sendable {
             candidate = min(bestTau, tauMax - 1)
         }
 
-        guard let tau = candidate, tau > tauMin, tau < tauMax else {
+        guard let tau = candidate, tau >= tauMin, tau < tauMax else {
             return PitchEstimate(frequency: nil, confidence: 0, rms: rms)
         }
 
