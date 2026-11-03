@@ -19,7 +19,7 @@ jobs:
         run: |
           set -euo pipefail
           echo "Checked out commit: $(git rev-parse HEAD)"
-          grep -q 'SETTINGS_SWIPE_PERCENT_2026_11_03' App/Sources/HomeView.swift
+          grep -q 'DETECTION_NOISE_2026_11_03' App/Sources/HomeView.swift
 
       - name: Run core tests with SwiftPM
         run: |
@@ -113,7 +113,7 @@ jobs:
           set -euo pipefail
           APP_PATH="$(find build/Build/Products/Release-iphoneos -maxdepth 1 -name '*.app' -type d | head -1)"
           test -n "$APP_PATH"
-          grep -a -q 'SETTINGS_SWIPE_PERCENT_2026_11_03' "$APP_PATH/TuneMetronome"
+          grep -a -q 'DETECTION_NOISE_2026_11_03' "$APP_PATH/TuneMetronome"
           rm -rf unsigned-ipa
           mkdir -p unsigned-ipa/Payload
           cp -R "$APP_PATH" unsigned-ipa/Payload/

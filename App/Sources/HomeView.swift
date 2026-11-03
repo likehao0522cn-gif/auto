@@ -63,10 +63,10 @@ struct HomeView: View {
             }
 
             Section("版本") {
-                Text(verbatim: "0.6.6 设置清扫与百分比显示 2026-11-03")
+                Text(verbatim: "0.6.7 检测降噪与播报修复 2026-11-03")
                     .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(Text(verbatim: "0.6.6 设置清扫与百分比显示，构建日期 2026 年 11 月 3 日"))
-                    .accessibilityIdentifier("SETTINGS_SWIPE_PERCENT_2026_11_03")
+                    .accessibilityLabel(Text(verbatim: "0.6.7 检测降噪与播报修复，构建日期 2026 年 11 月 3 日"))
+                    .accessibilityIdentifier("DETECTION_NOISE_2026_11_03")
             }
 
             Section("当前乐器") {

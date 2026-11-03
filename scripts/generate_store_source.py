@@ -49,7 +49,7 @@ def main() -> None:
                         "downloadURL": release_url(version, "TuneMetronome.ipa"),
                         "size": ipa_size,
                         "minOSVersion": "17.0",
-                        "versionDescription": "语音语速、音调、音量改为百分比显示，并支持旁白上下清扫；调音设置同样支持清扫；换音时立即打断旧播报。",
+                        "versionDescription": "降低单音误判为多音的几率并加入环境降噪；节拍器运行中切拍号不再抢读；调音播报打断后不再少字。",
                     }
                 ],
             }
