@@ -39,7 +39,14 @@ struct TunerView: View {
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(Text(verbatim: "乐器"))
                     .accessibilityValue(Text(verbatim: appModel.selectedPreset.displayName))
-                    .accessibilityHint(Text(verbatim: "双击选择乐器"))
+                    .accessibilityHint(Text(verbatim: "双击选择，或上下清扫直接调整"))
+                    .accessibilityAdjustableAction { direction in
+                        switch direction {
+                        case .increment: stepInstrument(1)
+                        case .decrement: stepInstrument(-1)
+                        @unknown default: break
+                        }
+                    }
 
                     if !appModel.selectedPreset.strings.isEmpty {
                         Divider()
@@ -151,7 +158,13 @@ struct TunerView: View {
         }
         .onChange(of: appModel.selectedPresetID) { _, _ in
             mode = appModel.selectedPreset.defaultMode
-            scheduleRestart(announceEntry: true)
+            scheduleRestart(announceEntry: false)
+            if UIAccessibility.isVoiceOverRunning {
+                UIAccessibility.post(
+                    notification: .announcement,
+                    argument: appModel.selectedPreset.displayName
+                )
+            }
         }
         .onChange(of: appModel.selectedStringID) { _, _ in
             scheduleRestart(announceEntry: false)
@@ -307,6 +320,16 @@ struct TunerView: View {
         .contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: "\(title)：\(value)"))
+    }
+
+    private func stepInstrument(_ delta: Int) {
+        let presets = appModel.presets
+        guard let index = presets.firstIndex(where: { $0.id == appModel.selectedPresetID }) else { return }
+        let nextIndex = (index + delta + presets.count) % presets.count
+        let next = presets[nextIndex]
+        guard next.id != appModel.selectedPresetID else { return }
+        appModel.selectPreset(next)
+        UISelectionFeedbackGenerator().selectionChanged()
     }
 
     private func scheduleRestart(announceEntry: Bool) {
