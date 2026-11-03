@@ -38,7 +38,9 @@ final class SpeechFeedback: NSObject, ObservableObject, AVSpeechSynthesizerDeleg
         }
         let utterance = AVSpeechUtterance(string: text)
         utterance.voice = AVSpeechSynthesisVoice(language: language)
-        utterance.rate = Float(settings.rate)
+        // AVSpeechUtterance.rate is 0...1; keep the scale explicit so
+        // higher user settings actually produce faster speech.
+        utterance.rate = Float(min(1.0, max(0.0, settings.rate)))
         utterance.pitchMultiplier = Float(settings.pitch)
         utterance.volume = Float(settings.volume)
         synthesizer.speak(utterance)
@@ -50,7 +52,14 @@ final class SpeechFeedback: NSObject, ObservableObject, AVSpeechSynthesizerDeleg
             onFinish?()
             return
         }
-        UIAccessibility.post(notification: .announcement, argument: text)
+        let announcement = NSAttributedString(
+            string: text,
+            attributes: [
+                .accessibilitySpeechQueueAnnouncement: false,
+                .accessibilitySpeechLanguage: "zh-CN"
+            ]
+        )
+        UIAccessibility.post(notification: .announcement, argument: announcement)
         let estimatedDuration = min(5.0, 0.7 + Double(text.count) * 0.06)
         voiceOverFinishTask = Task { @MainActor [weak self] in
             try? await Task.sleep(for: .seconds(estimatedDuration))

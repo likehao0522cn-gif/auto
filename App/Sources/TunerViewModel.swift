@@ -491,7 +491,7 @@ final class TunerViewModel: ObservableObject {
     }
 
     private func handle(_ estimate: PitchEstimate, samples: [Float], sampleRate: Double) {
-        guard isListening, !isPaused, !isSpeechActive else { return }
+        guard isListening, !isPaused else { return }
 
         let now = Date()
 
@@ -513,6 +513,11 @@ final class TunerViewModel: ObservableObject {
             lastAnnouncedCents = nil
             lastUpdateAt = nil
             autoUpdateCount = 0
+            // A new attack means a new note. Drop any still-playing speech
+            // for the previous note so the next result is not queued.
+            speech.stop()
+            isSpeechActive = false
+            onSpeechComplete = nil
         }
         previousRMS = estimate.rms
 
@@ -655,6 +660,9 @@ final class TunerViewModel: ObservableObject {
 
     private func speak(_ text: String, completion: (() -> Void)? = nil) {
         guard !text.isEmpty else { return }
+        // New tuning results always replace older speech instead of queueing
+        // behind it; fast note changes must be heard immediately.
+        speech.stop()
         isSpeechActive = true
         onSpeechComplete = completion
         speech.speak(text)

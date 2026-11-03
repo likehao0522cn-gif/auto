@@ -42,11 +42,11 @@ enum SpeechOutputMode: String, CaseIterable, Identifiable, Hashable {
 }
 
 struct SpeechSettings {
-    static let defaultRate = 0.48
+    static let defaultRate = 0.55
     static let defaultPitch = 1.0
     static let defaultVolume = 1.0
     static let minimumRate = 0.30
-    static let maximumRate = 0.70
+    static let maximumRate = 1.0
     static let minimumPitch = 0.80
     static let maximumPitch = 1.20
     static let minimumVolume = 0.20
@@ -70,6 +70,8 @@ struct SpeechSettings {
     }
 
     static func load(from defaults: UserDefaults = .standard) -> SpeechSettings {
+        // 0.70 was the old hard ceiling. Keep existing settings compatible
+        // while allowing the new faster range up to 1.0.
         let storedRate = defaults.object(forKey: Keys.rate) as? Double ?? defaultRate
         let storedPitch = defaults.object(forKey: Keys.pitch) as? Double ?? defaultPitch
         let storedVolume = defaults.object(forKey: Keys.volume) as? Double ?? defaultVolume
@@ -99,7 +101,8 @@ struct SpeechSettings {
         case ..<0.46: descriptor = "稍慢"
         case ..<0.53: descriptor = "标准"
         case ..<0.61: descriptor = "稍快"
-        default: descriptor = "快"
+        case ..<0.85: descriptor = "快"
+        default: descriptor = "很快"
         }
         return "\(descriptor)，\(String(format: "%.2f", clamped))"
     }
