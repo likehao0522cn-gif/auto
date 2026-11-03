@@ -9,14 +9,14 @@ final class MetronomeViewModel: ObservableObject {
     @Published var configuration: MetronomeConfiguration {
         didSet {
             saveConfiguration()
-            if isPlaying { restart() }
+            if isPlaying { scheduleRestart() }
         }
     }
 
     @Published var timbre: MetronomeTimbre {
         didSet {
             saveConfiguration()
-            if isPlaying { restart() }
+            if isPlaying { scheduleRestart() }
         }
     }
 
@@ -42,6 +42,9 @@ final class MetronomeViewModel: ObservableObject {
     private var interruptionObserver: NSObjectProtocol?
     private var hapticTask: Task<Void, Never>?
     private var scheduledHapticPattern: [MetronomeClick] = []
+    /// Live changes used to rebuild the whole engine on every tap, which made
+    /// +/- feel sluggish and could drop a beat. Coalesce bursts into one restart.
+    private var restartTask: Task<Void, Never>?
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -99,12 +102,16 @@ final class MetronomeViewModel: ObservableObject {
     }
 
     func stop() {
+        restartTask?.cancel()
+        restartTask = nil
         hapticTask?.cancel()
         hapticTask = nil
         engine.stop()
         isPlaying = false
         statusText = "已停止"
-        speak("节拍器已停止")
+        // No announcement: the button label already says 停止 and VoiceOver
+        // reads it on activation.
+        speech.stop()
     }
 
     func applyTapTempo(_ bpm: Double) {
@@ -148,6 +155,16 @@ final class MetronomeViewModel: ObservableObject {
         }
     }
 
+    /// Coalesce rapid +/- or swipe changes so only one engine rebuild happens.
+    private func scheduleRestart() {
+        restartTask?.cancel()
+        restartTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(180))
+            guard !Task.isCancelled, let self, self.isPlaying else { return }
+            self.restart()
+        }
+    }
+
     /// Rebuilds the click pattern while already playing, e.g. after a tempo
     /// or time-signature change. Must not announce "节拍器开始": that overlaps
     /// the time-signature announcement the user actually asked for.
@@ -160,9 +177,9 @@ final class MetronomeViewModel: ObservableObject {
     private func beginPlaybackFeedback(announceStart: Bool) {
         scheduledHapticPattern = MetronomePattern.clicks(for: configuration)
         statusText = playingStatusText
-        if announceStart {
-            speak("节拍器开始")
-        }
+        // VoiceOver already announces the button the user activated, so the
+        // app stays silent here to avoid reading the same thing twice.
+        _ = announceStart
         startHapticLoop()
     }
 

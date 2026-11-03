@@ -31,7 +31,9 @@ struct MetronomeView: View {
             .scrollDismissesKeyboard(.interactively)
 
             transportControls
-                .padding(.bottom, 12)
+                // AirPlay-style bars sit ~30pt above the home indicator so a
+                // thumb resting naturally does not hit the system gesture area.
+                .padding(.bottom, 32)
         }
         .navigationTitle("节拍器")
         .toolbar {
@@ -171,7 +173,9 @@ struct MetronomeView: View {
     }
 
     private var transportControls: some View {
-        HStack(spacing: 16) {
+        // Wider spacing than before reduces accidental taps next to the
+        // play/stop button, which matters most for blind users.
+        HStack(spacing: 22) {
             transportButton(systemName: "minus", label: "减小速度", enabled: metronome.configuration.bpm > MetronomeTempo.validBPMRange.lowerBound) {
                 metronome.setBPM(metronome.configuration.bpm - 1)
             }
@@ -185,7 +189,7 @@ struct MetronomeView: View {
             }
             .buttonStyle(.borderedProminent)
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel(Text(verbatim: metronome.isPlaying ? "停止节拍器" : "开始节拍器"))
+            .accessibilityLabel(Text(verbatim: metronome.isPlaying ? "停止" : "开始"))
 
             transportButton(systemName: "plus", label: "增大速度", enabled: metronome.configuration.bpm < MetronomeTempo.validBPMRange.upperBound) {
                 metronome.setBPM(metronome.configuration.bpm + 1)
