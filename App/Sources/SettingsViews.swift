@@ -107,6 +107,13 @@ struct TuningSettingsView: View {
                 )
             }
 
+            Section("进入调音器") {
+                Toggle(isOn: $appModel.tunerAutoStartEnabled) {
+                    Text(verbatim: "进入后自动开始检测")
+                }
+                .accessibilityHint(Text(verbatim: "关闭后，进入调音器会保持暂停，需要手动点继续聆听"))
+            }
+
             Section("自动更新反馈") {
                 SwipeChoiceRow(
                     title: "自动更新反馈",

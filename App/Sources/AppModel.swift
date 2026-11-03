@@ -67,6 +67,16 @@ enum NoteNamingFormatter {
     static func stringDisplayName(_ string: TuningString, style: NoteNamingStyle) -> String {
         "\(string.numberLabel)，\(noteName(midi: string.midi, style: style))"
     }
+
+    /// Speech-friendly form. Display stays as C#4, but Chinese TTS/VoiceOver
+    /// reads a bare "#" character by character, so sharpen is spelled out.
+    static func spokenNoteName(midi: Int, style: NoteNamingStyle) -> String {
+        let display = noteName(midi: midi, style: style)
+        if display.contains("#") {
+            return "升" + display.replacingOccurrences(of: "#", with: "")
+        }
+        return display
+    }
 }
 
 enum ReferenceToneTimbre: String, CaseIterable, Identifiable, Hashable {
@@ -161,6 +171,13 @@ final class AppModel: ObservableObject {
         didSet { save() }
     }
 
+    /// When false, opening the tuner stays paused until the user taps
+    /// "继续聆听". Useful when the room is noisy and the user wants to settle
+    /// the instrument first.
+    @Published var tunerAutoStartEnabled: Bool {
+        didSet { save() }
+    }
+
     @Published var speechRate: Double {
         didSet { save() }
     }
@@ -205,6 +222,7 @@ final class AppModel: ObservableObject {
         self.language = storedLanguage.isAvailable ? storedLanguage : .simplifiedChinese
         self.tapTempoHapticsEnabled = defaults.object(forKey: Keys.tapTempoHapticsEnabled) as? Bool ?? true
         self.tapTempoCountdownHintEnabled = defaults.object(forKey: Keys.tapTempoCountdownHintEnabled) as? Bool ?? true
+        self.tunerAutoStartEnabled = defaults.object(forKey: Keys.tunerAutoStartEnabled) as? Bool ?? true
         let speechSettings = SpeechSettings.load(from: defaults)
         self.speechRate = speechSettings.rate
         self.speechPitch = speechSettings.pitch
@@ -275,6 +293,7 @@ final class AppModel: ObservableObject {
         language = .simplifiedChinese
         tapTempoHapticsEnabled = true
         tapTempoCountdownHintEnabled = true
+        tunerAutoStartEnabled = true
         speechRate = SpeechSettings.defaultRate
         speechPitch = SpeechSettings.defaultPitch
         speechVolume = SpeechSettings.defaultVolume
@@ -293,6 +312,7 @@ final class AppModel: ObservableObject {
         defaults.set(language.rawValue, forKey: Keys.language)
         defaults.set(tapTempoHapticsEnabled, forKey: Keys.tapTempoHapticsEnabled)
         defaults.set(tapTempoCountdownHintEnabled, forKey: Keys.tapTempoCountdownHintEnabled)
+        defaults.set(tunerAutoStartEnabled, forKey: Keys.tunerAutoStartEnabled)
         SpeechSettings(
             rate: speechRate,
             pitch: speechPitch,
@@ -314,6 +334,7 @@ final class AppModel: ObservableObject {
         static let language = "language"
         static let tapTempoHapticsEnabled = "tapTempoHapticsEnabled"
         static let tapTempoCountdownHintEnabled = "tapTempoCountdownHintEnabled"
+        static let tunerAutoStartEnabled = "tunerAutoStartEnabled"
     }
 }
 

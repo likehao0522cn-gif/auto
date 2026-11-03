@@ -123,10 +123,24 @@ struct TunerView: View {
                 metronome.stop()
             }
             mode = appModel.selectedPreset.defaultMode
-            if scenePhase == .active {
-                startNow(announceEntry: true)
+            if appModel.tunerAutoStartEnabled {
+                if scenePhase == .active {
+                    startNow(announceEntry: true)
+                } else {
+                    viewModel.prepareToListenWhenActive(
+                        preset: appModel.selectedPreset,
+                        string: appModel.selectedTargetString,
+                        mode: mode,
+                        concertA: appModel.concertA,
+                        toleranceCents: appModel.toleranceCents,
+                        feedbackMode: appModel.autoUpdateFeedbackMode,
+                        namingStyle: appModel.noteNamingStyle,
+                        referenceTimbre: appModel.referenceToneTimbre
+                    )
+                }
             } else {
-                viewModel.prepareToListenWhenActive(
+                // Respect the user's choice to start paused.
+                viewModel.startPaused(
                     preset: appModel.selectedPreset,
                     string: appModel.selectedTargetString,
                     mode: mode,

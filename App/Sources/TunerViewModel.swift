@@ -25,12 +25,28 @@ struct TuningReading: Equatable {
         feedback.displayText
     }
 
+    /// Chinese TTS reads a bare "#" as an extra word, so sharps are spelled
+    /// out for speech while the visible text keeps "C#4".
+    static func spokenNoteName(_ displayName: String) -> String {
+        guard displayName.contains("#") else { return displayName }
+        let base = displayName.replacingOccurrences(of: "#", with: "")
+        let octaveMap: [Character: String] = [
+            "0": "零", "1": "一", "2": "二", "3": "三", "4": "四",
+            "5": "五", "6": "六", "7": "七", "8": "八", "9": "九"
+        ]
+        guard let letter = base.first else { return base }
+        let rest = String(base.dropFirst())
+        let spokenOctave = rest.compactMap { octaveMap[$0] }.joined()
+        return "升\(letter)\(spokenOctave.isEmpty ? rest : spokenOctave)"
+    }
+
     var spokenText: String {
-        feedback.fullSpokenText
+        "\(Self.spokenNoteName(noteName))，\(PitchMath.formatCents(cents))"
     }
 
     var shortSpokenText: String {
-        feedback.shortSpokenText
+        let short = feedback.shortSpokenText
+        return Self.spokenNoteName(short)
     }
 
     func shouldAnnounceFullResult(comparedTo previous: TuningReading?) -> Bool {
@@ -182,6 +198,43 @@ final class TunerViewModel: ObservableObject {
             }
             self.beginListening(announceEntry: announceEntry)
         }
+    }
+
+    /// Configure the tuner but stay paused until the user explicitly resumes.
+    func startPaused(
+        preset: InstrumentPreset,
+        string: TuningString?,
+        mode: DetectionMode,
+        concertA: Double,
+        toleranceCents: Double,
+        feedbackMode: AutoUpdateFeedbackMode,
+        namingStyle: NoteNamingStyle,
+        referenceTimbre: ReferenceToneTimbre
+    ) {
+        routeRestartTask?.cancel()
+        routeRestartTask = nil
+        audioEngine.stop()
+        speech.stop()
+        isSpeechActive = false
+        isAppTonePlaying = false
+        self.preset = preset
+        self.targetString = string
+        self.mode = mode
+        self.concertA = concertA
+        self.toleranceCents = toleranceCents
+        self.feedbackMode = feedbackMode
+        self.namingStyle = namingStyle
+        self.referenceTimbre = referenceTimbre
+        resetDetectionState()
+        reading = nil
+        liveReading = nil
+        isListening = false
+        isPaused = true
+        wantsListening = false
+        resumeAfterLifecycle = false
+        errorMessage = nil
+        needsMicrophonePermission = false
+        statusText = "已暂停，点继续聆听开始"
     }
 
     func stop() {
@@ -494,7 +547,9 @@ final class TunerViewModel: ObservableObject {
 
     private var entryAnnouncement: String {
         let target = targetString.map {
-            NoteNamingFormatter.stringDisplayName($0, style: namingStyle)
+            Self.spokenNoteName(
+                NoteNamingFormatter.stringDisplayName($0, style: namingStyle)
+            )
         } ?? mode.title
         return "调音器，\(preset.displayName)，\(target)，正在聆听"
     }
@@ -509,9 +564,16 @@ final class TunerViewModel: ObservableObject {
         updateNoiseFloor(rms: estimate.rms)
 
         let adaptiveMinimumRMS = min(0.02, max(0.0025, noiseFloorRMS * 2.5))
+        // High piano notes decay fast and carry little energy. Requiring the
+        // same level as bass notes made C7 and above look silent.
+        let highNoteRelief = (estimate.frequency ?? 0) >= 1_500
+        let requiredRMS = highNoteRelief
+            ? max(0.0012, adaptiveMinimumRMS * 0.45)
+            : adaptiveMinimumRMS
+        let requiredConfidence = highNoteRelief ? 0.5 : 0.62
         let reliable = estimate.frequency != nil
-            && estimate.confidence >= 0.62
-            && estimate.rms >= adaptiveMinimumRMS
+            && estimate.confidence >= requiredConfidence
+            && estimate.rms >= requiredRMS
 
         guard let frequency = estimate.frequency, reliable else {
             let silenceDuration = lastSoundAt.map { now.timeIntervalSince($0) } ?? .infinity
@@ -572,12 +634,20 @@ final class TunerViewModel: ObservableObject {
         let recent = Array(pluckFrequencies.suffix(5)).sorted()
         let medianFrequency = recent[recent.count / 2]
 
+        // A single string or key should give a stable pitch. When the recent
+        // frames disagree a lot, the estimate is probably tracking a different
+        // partial; reporting "multiple notes" there would be wrong, so wait
+        // for a steadier reading instead.
+        let spread = recent.last! - recent.first!
+        let isSteady = medianFrequency > 0 && spread / medianFrequency < 0.03
+
         let multiplePitchResult = MultiplePitchDetector.detect(
             samples: samples,
             sampleRate: sampleRate,
             primaryFrequency: medianFrequency,
             primaryConfidence: estimate.confidence,
-            rms: estimate.rms
+            rms: estimate.rms,
+            isPitchSteady: isSteady
         )
         if multiplePitchResult.isMultiplePitches {
             if !isShowingMultiplePitchWarning {
@@ -709,7 +779,9 @@ final class TunerViewModel: ObservableObject {
         if rms > noiseFloorRMS {
             noiseFloorRMS += (rms - noiseFloorRMS) * 0.08
         } else {
-            noiseFloorRMS += (rms - noiseFloorRMS) * 0.01
+            // 1%/frame at ~186 ms per frame took ~19 s to recover, so a loud
+            // passage kept the gate high long after the room went quiet.
+            noiseFloorRMS += (rms - noiseFloorRMS) * 0.05
         }
     }
 
