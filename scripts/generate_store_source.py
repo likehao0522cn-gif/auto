@@ -22,6 +22,41 @@ def main() -> None:
     output = Path(sys.argv[3])
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
+    # SideStore compares the installed version against this list. Keeping a
+    # short history (newest first) makes updates show up reliably even when the
+    # installed build sits a few versions behind.
+    version_history = [
+        ("0.6.7", "2026-11-03T06:57:54Z", 625174,
+         "降低单音误判为多音的几率并加入环境降噪；节拍器运行中切拍号不再抢读；调音播报打断后不再少字。"),
+        ("0.6.6", "2026-11-03T04:28:58Z", 620384,
+         "语音语速、音调、音量改为百分比显示，并支持旁白上下清扫；调音设置同样支持清扫。"),
+        ("0.6.5", "2026-11-03T02:22:58Z", 622532,
+         "调音器音频兼容旁白，失败提示改为中文；乐器支持旁白上下清扫或点选；换音时立即打断旧播报。"),
+    ]
+
+    def version_entry(entry_version, entry_date, entry_size, entry_note):
+        return {
+            "version": entry_version,
+            "date": entry_date,
+            "downloadURL": release_url(entry_version, "TuneMetronome.ipa"),
+            "size": entry_size,
+            "minOSVersion": "17.0",
+            "versionDescription": entry_note,
+        }
+
+    listed_versions = [version_entry(*item) for item in version_history]
+    # Guarantee the version being built is present and first, even if the
+    # hard-coded history above is stale.
+    listed_versions = [
+        entry for entry in listed_versions if entry["version"] != version
+    ]
+    listed_versions.insert(0, version_entry(
+        version,
+        now,
+        ipa_size,
+        "降低单音误判为多音的几率并加入环境降噪；节拍器运行中切拍号不再抢读；调音播报打断后不再少字。",
+    ))
+
     source = {
         "name": "调音节拍器测试源",
         "identifier": "com.shm06.TuneMetronome.source",
@@ -42,16 +77,7 @@ def main() -> None:
                 "iconURL": release_url(version, "icon.png"),
                 "tintColor": "#F5BE50",
                 "category": "utilities",
-                "versions": [
-                    {
-                        "version": version,
-                        "date": now,
-                        "downloadURL": release_url(version, "TuneMetronome.ipa"),
-                        "size": ipa_size,
-                        "minOSVersion": "17.0",
-                        "versionDescription": "降低单音误判为多音的几率并加入环境降噪；节拍器运行中切拍号不再抢读；调音播报打断后不再少字。",
-                    }
-                ],
+                "versions": listed_versions,
             }
         ],
     }
