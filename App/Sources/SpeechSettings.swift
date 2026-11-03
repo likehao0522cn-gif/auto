@@ -47,6 +47,7 @@ struct SpeechSettings {
     static let defaultVolume = 1.0
     static let minimumRate = 0.30
     static let maximumRate = 1.0
+    static let legacyMaximumRate = 0.70
     static let minimumPitch = 0.80
     static let maximumPitch = 1.20
     static let minimumVolume = 0.20
@@ -70,9 +71,16 @@ struct SpeechSettings {
     }
 
     static func load(from defaults: UserDefaults = .standard) -> SpeechSettings {
-        // 0.70 was the old hard ceiling. Keep existing settings compatible
-        // while allowing the new faster range up to 1.0.
-        let storedRate = defaults.object(forKey: Keys.rate) as? Double ?? defaultRate
+        // 0.70 was the old hard ceiling. Users who already pinned the ceiling
+        // want faster speech, so lift them once to 0.88 on upgrade.
+        var storedRate = defaults.object(forKey: Keys.rate) as? Double ?? defaultRate
+        if !defaults.bool(forKey: Keys.didLiftLegacyRateCeiling) {
+            if abs(storedRate - legacyMaximumRate) < 0.001 {
+                storedRate = 0.88
+                defaults.set(storedRate, forKey: Keys.rate)
+            }
+            defaults.set(true, forKey: Keys.didLiftLegacyRateCeiling)
+        }
         let storedPitch = defaults.object(forKey: Keys.pitch) as? Double ?? defaultPitch
         let storedVolume = defaults.object(forKey: Keys.volume) as? Double ?? defaultVolume
         let storedMode = SpeechOutputMode(
@@ -130,5 +138,6 @@ struct SpeechSettings {
         static let pitch = "speechPitch"
         static let volume = "speechVolume"
         static let outputMode = "speechOutputMode"
+        static let didLiftLegacyRateCeiling = "speechRateCeilingLifted2026_11"
     }
 }

@@ -71,6 +71,9 @@ final class TunerViewModel: ObservableObject {
     private var isShowingMultiplePitchWarning = false
     private var lastLiveReadingPublishAt: Date = .distantPast
     private var isSpeechActive = false
+    /// True while the app itself is producing sound (earcon or reference tone).
+    /// Those frames must be ignored by pitch analysis; VoiceOver speech must not.
+    private var isAppTonePlaying = false
     private var onSpeechComplete: (() -> Void)?
     private var interruptionObserver: NSObjectProtocol?
     private var routeChangeObserver: NSObjectProtocol?
@@ -182,6 +185,7 @@ final class TunerViewModel: ObservableObject {
         audioEngine.stop()
         speech.stop()
         isSpeechActive = false
+        isAppTonePlaying = false
         isListening = false
         isPaused = false
         resumeAfterLifecycle = false
@@ -327,17 +331,17 @@ final class TunerViewModel: ObservableObject {
         }
         let targetMIDI = reading?.targetMIDI ?? targetString?.midi ?? 69
         let frequency = PitchMath.frequency(forMIDI: Double(targetMIDI), concertA: concertA)
-        isSpeechActive = true
+        isAppTonePlaying = true
         statusText = "正在播放参考音"
         do {
             try audioEngine.playReferenceTone(frequency: frequency, timbre: referenceTimbre) { [weak self] in
                 guard let self else { return }
-                self.isSpeechActive = false
+                self.isAppTonePlaying = false
                 self.statusText = "继续聆听"
                 self.speak("继续聆听")
             }
         } catch {
-            isSpeechActive = false
+            isAppTonePlaying = false
             errorMessage = "参考音播放失败，请稍后再试。"
             statusText = "参考音播放失败"
         }
@@ -491,7 +495,10 @@ final class TunerViewModel: ObservableObject {
     }
 
     private func handle(_ estimate: PitchEstimate, samples: [Float], sampleRate: Double) {
-        guard isListening, !isPaused else { return }
+        // The app's own earcon/reference tone must never be analysed. Speech is
+        // allowed through so a new note can interrupt it; the onset check below
+        // requires a louder attack while speaking to avoid looping on our voice.
+        guard isListening, !isPaused, !isAppTonePlaying else { return }
 
         let now = Date()
 
@@ -506,7 +513,15 @@ final class TunerViewModel: ObservableObject {
         }
 
         lastSoundAt = now
-        let isOnset = pluckStartedAt == nil || (previousRMS < 0.008 && estimate.rms >= 0.012)
+        // While our own announcement is playing it can leak into the mic.
+        // Accept a new note then only when it is clearly louder than speech,
+        // so fast note changes still register without looping on our own voice.
+        let isOnset: Bool
+        if isSpeechActive {
+            isOnset = pluckStartedAt == nil || (previousRMS < 0.02 && estimate.rms >= 0.05)
+        } else {
+            isOnset = pluckStartedAt == nil || (previousRMS < 0.008 && estimate.rms >= 0.012)
+        }
         if isOnset {
             pluckStartedAt = now
             pluckFrequencies.removeAll(keepingCapacity: true)
@@ -626,16 +641,16 @@ final class TunerViewModel: ObservableObject {
         } else if feedbackMode == .numberAndHaptics {
             speak(reading.shortSpokenText)
         } else {
-            isSpeechActive = true
+            isAppTonePlaying = true
             do {
                 try audioEngine.playEarcon(
                     cents: reading.cents,
                     isInTune: reading.isInTune
                 ) { [weak self] in
-                    self?.isSpeechActive = false
+                    self?.isAppTonePlaying = false
                 }
             } catch {
-                isSpeechActive = false
+                isAppTonePlaying = false
             }
         }
     }
