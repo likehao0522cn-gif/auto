@@ -528,9 +528,8 @@ final class TunerViewModel: ObservableObject {
             lastAnnouncedCents = nil
             lastUpdateAt = nil
             autoUpdateCount = 0
-            // A new attack means a new note. Drop any still-playing speech
-            // for the previous note so the next result is not queued.
-            speech.stop()
+            // A new attack means a new note. Clear the previous note's speech
+            // state; the next announcement interrupts it without queueing.
             isSpeechActive = false
             onSpeechComplete = nil
         }
@@ -675,9 +674,8 @@ final class TunerViewModel: ObservableObject {
 
     private func speak(_ text: String, completion: (() -> Void)? = nil) {
         guard !text.isEmpty else { return }
-        // New tuning results always replace older speech instead of queueing
-        // behind it; fast note changes must be heard immediately.
-        speech.stop()
+        // SpeechFeedback interrupts any older utterance itself and waits for
+        // the cancellation to settle, so the new result is not clipped.
         isSpeechActive = true
         onSpeechComplete = completion
         speech.speak(text)

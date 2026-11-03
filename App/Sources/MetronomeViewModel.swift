@@ -135,12 +135,12 @@ final class MetronomeViewModel: ObservableObject {
         generator.impactOccurred()
     }
 
-    private func startEngine() {
+    private func startEngine(announceStart: Bool = true) {
         do {
             try engine.start(configuration: configuration, timbre: timbre)
             isPlaying = true
             errorMessage = nil
-            beginPlaybackFeedback()
+            beginPlaybackFeedback(announceStart: announceStart)
         } catch {
             isPlaying = false
             errorMessage = "无法开始节拍器，请检查音频是否被其他应用占用，或稍后再试。"
@@ -148,16 +148,21 @@ final class MetronomeViewModel: ObservableObject {
         }
     }
 
+    /// Rebuilds the click pattern while already playing, e.g. after a tempo
+    /// or time-signature change. Must not announce "节拍器开始": that overlaps
+    /// the time-signature announcement the user actually asked for.
     private func restart() {
         hapticTask?.cancel()
         hapticTask = nil
-        startEngine()
+        startEngine(announceStart: false)
     }
 
-    private func beginPlaybackFeedback() {
+    private func beginPlaybackFeedback(announceStart: Bool) {
         scheduledHapticPattern = MetronomePattern.clicks(for: configuration)
         statusText = playingStatusText
-        speak("节拍器开始")
+        if announceStart {
+            speak("节拍器开始")
+        }
         startHapticLoop()
     }
 
