@@ -122,7 +122,12 @@ struct TunerView: View {
             if metronome.isPlaying {
                 metronome.stop()
             }
-            mode = appModel.selectedPreset.defaultMode
+            // Assign only when different: writing the same value still fires
+            // onChange on some iOS versions and would restart the engine.
+            let defaultMode = appModel.selectedPreset.defaultMode
+            if mode != defaultMode {
+                mode = defaultMode
+            }
             if appModel.tunerAutoStartEnabled {
                 if scenePhase == .active {
                     startNow(announceEntry: true)
@@ -171,7 +176,10 @@ struct TunerView: View {
             }
         }
         .onChange(of: appModel.selectedPresetID) { _, _ in
-            mode = appModel.selectedPreset.defaultMode
+            let defaultMode = appModel.selectedPreset.defaultMode
+            if mode != defaultMode {
+                mode = defaultMode
+            }
             scheduleRestart(announceEntry: false)
             if UIAccessibility.isVoiceOverRunning {
                 UIAccessibility.post(
@@ -352,6 +360,10 @@ struct TunerView: View {
 
     private func scheduleRestart(announceEntry: Bool) {
         restartTask?.cancel()
+        // Two cases must pass: the user left auto-start on, or they already
+        // started listening manually. Property observers fire during the first
+        // layout pass, so without this guard they override the paused state.
+        guard appModel.tunerAutoStartEnabled || viewModel.isListening else { return }
         restartTask = Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(120))
             guard !Task.isCancelled, hasAppeared, scenePhase == .active else { return }
