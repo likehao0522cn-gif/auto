@@ -201,6 +201,10 @@ struct TunerView: View {
         .onChange(of: appModel.referenceToneTimbre) { _, _ in
             scheduleRestart(announceEntry: false)
         }
+        .onChange(of: appModel.tuningDisplayUnit) { _, _ in
+            viewModel.displayUnit = appModel.tuningDisplayUnit
+            scheduleRestart(announceEntry: false)
+        }
         .onChange(of: mode) { _, _ in
             scheduleRestart(announceEntry: false)
         }
@@ -263,7 +267,7 @@ struct TunerView: View {
 
     private var resultText: String {
         if let reading = viewModel.reading {
-            return reading.displayText
+            return reading.displayText(unit: appModel.tuningDisplayUnit)
         }
         return viewModel.statusText
     }
@@ -361,6 +365,7 @@ struct TunerView: View {
     }
 
     private func startNow(announceEntry: Bool) {
+        viewModel.displayUnit = appModel.tuningDisplayUnit
         viewModel.start(
             preset: appModel.selectedPreset,
             string: appModel.selectedTargetString,

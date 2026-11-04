@@ -11,7 +11,7 @@ final class TuningFeedbackTests: XCTestCase {
         )
 
         XCTAssertEqual(feedback.direction, .inTune)
-        XCTAssertEqual(feedback.displayText, "A4，准")
+        XCTAssertEqual(feedback.displayText(unit: .cents), "A4，准")
     }
 
     func testHighAndLowDirections() {
@@ -20,8 +20,8 @@ final class TuningFeedbackTests: XCTestCase {
 
         XCTAssertEqual(high.direction, .high)
         XCTAssertEqual(low.direction, .low)
-        XCTAssertTrue(high.displayText.contains("高 12 音分"))
-        XCTAssertTrue(low.displayText.contains("低 12 音分"))
+        XCTAssertTrue(high.displayText(unit: .cents).contains("高 12 音分"))
+        XCTAssertTrue(low.displayText(unit: .cents).contains("低 12 音分"))
     }
 
     func testLowConfidenceIsSpokenAsFullResult() {
@@ -33,8 +33,40 @@ final class TuningFeedbackTests: XCTestCase {
         )
 
         XCTAssertTrue(feedback.isLowConfidence)
-        XCTAssertTrue(feedback.shortSpokenText.contains("请再弹一次"))
-        XCTAssertTrue(feedback.displayText.contains("置信度低"))
+        XCTAssertTrue(feedback.shortSpokenText(unit: .cents).contains("请再弹一次"))
+        XCTAssertTrue(feedback.displayText(unit: .cents).contains("置信度低"))
+    }
+
+    func testHertzModeShowsMeasuredFrequencyAndTarget() {
+        let feedback = TuningFeedback(
+            noteName: "A4",
+            cents: -12,
+            confidence: 0.9,
+            toleranceCents: 3,
+            frequency: 436.5,
+            targetFrequency: 440.0
+        )
+
+        let text = feedback.displayText(unit: .hertz)
+        XCTAssertTrue(text.contains("436.5 赫兹"))
+        XCTAssertTrue(text.contains("440.0 赫兹"))
+    }
+
+    func testSpokenAndDisplayedTextShareTheSameUnit() {
+        let feedback = TuningFeedback(
+            noteName: "A4",
+            cents: -12,
+            confidence: 0.9,
+            toleranceCents: 3,
+            frequency: 436.5,
+            targetFrequency: 440.0
+        )
+
+        // The spoken text is derived from the displayed text, so the two must
+        // agree on which unit is being reported.
+        XCTAssertTrue(feedback.fullSpokenText(unit: .hertz).contains("赫兹"))
+        XCTAssertFalse(feedback.fullSpokenText(unit: .hertz).contains("音分"))
+        XCTAssertTrue(feedback.fullSpokenText(unit: .cents).contains("音分"))
     }
 
     func testDirectionAndNoteChangesRequireFullResult() {

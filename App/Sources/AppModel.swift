@@ -159,6 +159,12 @@ final class AppModel: ObservableObject {
         didSet { save() }
     }
 
+    /// Whether tuning deviation is shown as cents or hertz. The same unit is
+    /// used for the on-screen text and the spoken result.
+    @Published var tuningDisplayUnit: TuningDisplayUnit {
+        didSet { save() }
+    }
+
     @Published var language: AppLanguage {
         didSet { save() }
     }
@@ -216,6 +222,9 @@ final class AppModel: ObservableObject {
         self.referenceToneTimbre = ReferenceToneTimbre(
             rawValue: defaults.string(forKey: Keys.referenceToneTimbre) ?? ""
         ) ?? .sine
+        self.tuningDisplayUnit = TuningDisplayUnit(
+            rawValue: defaults.string(forKey: Keys.tuningDisplayUnit) ?? ""
+        ) ?? .cents
         let storedLanguage = AppLanguage(
             rawValue: defaults.string(forKey: Keys.language) ?? ""
         ) ?? .simplifiedChinese
@@ -290,6 +299,7 @@ final class AppModel: ObservableObject {
         autoUpdateFeedbackMode = .numberAndHaptics
         noteNamingStyle = .letter
         referenceToneTimbre = .sine
+        tuningDisplayUnit = .cents
         language = .simplifiedChinese
         tapTempoHapticsEnabled = true
         tapTempoCountdownHintEnabled = true
@@ -309,6 +319,7 @@ final class AppModel: ObservableObject {
         defaults.set(autoUpdateFeedbackMode.rawValue, forKey: Keys.autoUpdateFeedbackMode)
         defaults.set(noteNamingStyle.rawValue, forKey: Keys.noteNamingStyle)
         defaults.set(referenceToneTimbre.rawValue, forKey: Keys.referenceToneTimbre)
+        defaults.set(tuningDisplayUnit.rawValue, forKey: Keys.tuningDisplayUnit)
         defaults.set(language.rawValue, forKey: Keys.language)
         defaults.set(tapTempoHapticsEnabled, forKey: Keys.tapTempoHapticsEnabled)
         defaults.set(tapTempoCountdownHintEnabled, forKey: Keys.tapTempoCountdownHintEnabled)
@@ -331,6 +342,7 @@ final class AppModel: ObservableObject {
         static let autoUpdateFeedbackMode = "autoUpdateFeedbackMode"
         static let noteNamingStyle = "noteNamingStyle"
         static let referenceToneTimbre = "referenceToneTimbre"
+        static let tuningDisplayUnit = "tuningDisplayUnit"
         static let language = "language"
         static let tapTempoHapticsEnabled = "tapTempoHapticsEnabled"
         static let tapTempoCountdownHintEnabled = "tapTempoCountdownHintEnabled"

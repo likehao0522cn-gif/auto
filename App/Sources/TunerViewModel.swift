@@ -25,6 +25,8 @@ struct TuningReading: Equatable {
     let targetMIDI: Int
     let cents: Double
     let frequency: Double
+    /// Ideal frequency of the target note under the current concert pitch.
+    let targetFrequency: Double
     let confidence: Double
     let isInTune: Bool
     let toleranceCents: Double
@@ -34,21 +36,22 @@ struct TuningReading: Equatable {
             noteName: noteName,
             cents: cents,
             confidence: confidence,
-            toleranceCents: toleranceCents
+            toleranceCents: toleranceCents,
+            frequency: frequency,
+            targetFrequency: targetFrequency
         )
     }
 
-    var displayText: String {
-        feedback.displayText
+    func displayText(unit: TuningDisplayUnit) -> String {
+        feedback.displayText(unit: unit)
     }
 
-    var spokenText: String {
-        "\(SpokenNoteName.convert(noteName))，\(PitchMath.formatCents(cents))"
+    func spokenText(unit: TuningDisplayUnit) -> String {
+        "\(SpokenNoteName.convert(noteName))，\(feedback.resultText(unit: unit))"
     }
 
-    var shortSpokenText: String {
-        let short = feedback.shortSpokenText
-        return SpokenNoteName.convert(short)
+    func shortSpokenText(unit: TuningDisplayUnit) -> String {
+        SpokenNoteName.convert(feedback.shortSpokenText(unit: unit))
     }
 
     func shouldAnnounceFullResult(comparedTo previous: TuningReading?) -> Bool {
@@ -77,6 +80,7 @@ final class TunerViewModel: ObservableObject {
     private var feedbackMode: AutoUpdateFeedbackMode = .numberAndHaptics
     private var namingStyle: NoteNamingStyle = .letter
     private var referenceTimbre: ReferenceToneTimbre = .sine
+    var displayUnit: TuningDisplayUnit = .cents
 
     private var previousRMS: Double = 0
     private var lastSoundAt: Date?
@@ -378,7 +382,7 @@ final class TunerViewModel: ObservableObject {
 
     func queryResult() {
         if let reading {
-            speak(reading.spokenText)
+            speak(reading.spokenText(unit: displayUnit))
         } else {
             speak("还没有检测到稳定音高")
         }
@@ -702,6 +706,7 @@ final class TunerViewModel: ObservableObject {
             targetMIDI: targetNote.midi,
             cents: cents,
             frequency: frequency,
+            targetFrequency: PitchMath.frequency(for: targetNote, concertA: concertA),
             confidence: confidence,
             isInTune: abs(cents) <= toleranceCents,
             toleranceCents: toleranceCents
@@ -710,7 +715,7 @@ final class TunerViewModel: ObservableObject {
 
     private func present(_ reading: TuningReading, initial: Bool) {
         self.reading = reading
-        statusText = reading.displayText
+        statusText = reading.displayText(unit: displayUnit)
         lastAnnouncedCents = reading.cents
         lastUpdateAt = Date()
         if !initial {
@@ -724,9 +729,9 @@ final class TunerViewModel: ObservableObject {
         lastPresentedReading = reading
 
         if shouldSpeakFullResult {
-            speak(reading.spokenText)
+            speak(reading.spokenText(unit: displayUnit))
         } else if feedbackMode == .numberAndHaptics {
-            speak(reading.shortSpokenText)
+            speak(reading.shortSpokenText(unit: displayUnit))
         } else {
             isAppTonePlaying = true
             do {

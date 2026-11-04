@@ -98,6 +98,19 @@ struct TuningSettingsView: View {
                 )
             }
 
+            Section("显示单位") {
+                SwipeChoiceRow(
+                    title: "显示单位",
+                    options: TuningDisplayUnit.allCases,
+                    selection: $appModel.tuningDisplayUnit,
+                    label: { $0.title }
+                )
+
+                Text(verbatim: "旁白朗读与屏幕显示使用同一个单位。")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
             Section("音名读法") {
                 SwipeChoiceRow(
                     title: "音名读法",
