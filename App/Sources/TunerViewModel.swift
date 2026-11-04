@@ -46,12 +46,19 @@ struct TuningReading: Equatable {
         feedback.displayText(unit: unit)
     }
 
+    /// Full sentence used the first time a note is reported.
     func spokenText(unit: TuningDisplayUnit) -> String {
-        "\(SpokenNoteName.convert(noteName))，\(feedback.resultText(unit: unit))"
+        feedback.fullSpokenText(unit: unit, name: SpokenNoteName.convert(noteName))
     }
 
+    /// Value only. Used when the same note repeats inside the repeat window so
+    /// the user hears the new reading without the note name again.
     func shortSpokenText(unit: TuningDisplayUnit) -> String {
-        SpokenNoteName.convert(feedback.shortSpokenText(unit: unit))
+        feedback.shortSpokenText(unit: unit)
+    }
+
+    func valueOnlyText(unit: TuningDisplayUnit) -> String {
+        feedback.resultText(unit: unit)
     }
 
     func shouldAnnounceFullResult(comparedTo previous: TuningReading?) -> Bool {
@@ -68,6 +75,10 @@ final class TunerViewModel: ObservableObject {
     @Published private(set) var isPaused: Bool = false
     @Published private(set) var errorMessage: String?
     @Published private(set) var needsMicrophonePermission = false
+
+    /// How long a note name stays "known". Re-plucking the same note inside
+    /// this window reports only the new value.
+    static let repeatNoteNameWindow: TimeInterval = 8
 
     private let audioEngine = TunerAudioEngine()
     private let speech = SpeechFeedback()
@@ -92,6 +103,11 @@ final class TunerViewModel: ObservableObject {
     private var lastPresentedReading: TuningReading?
     private var isShowingMultiplePitchWarning = false
     private var lastLiveReadingPublishAt: Date = .distantPast
+    /// Note name of the most recent full announcement and when it happened.
+    /// Repeating the same note within the window is reported as a value only,
+    /// which keeps rapid re-plucks from re-reading the note name every time.
+    private var lastAnnouncedNoteName: String?
+    private var lastFullAnnouncementAt: Date = .distantPast
     /// Rolling estimate of the room's background level. Raised slowly while
     /// quiet, never by loud musical attacks, so tuning stays usable in noisy
     /// rooms instead of treating constant hiss as a played note.
@@ -724,14 +740,24 @@ final class TunerViewModel: ObservableObject {
 
         playHaptic(for: reading)
 
-        let shouldSpeakFullResult = initial
-            || reading.shouldAnnounceFullResult(comparedTo: lastPresentedReading)
+        // Repeating the same note shortly after it was named does not need the
+        // name again; the user already knows which note they are holding.
+        let now = Date()
+        let isSameNoteRecentlyNamed = lastAnnouncedNoteName == reading.noteName
+            && now.timeIntervalSince(lastFullAnnouncementAt) < Self.repeatNoteNameWindow
+
+        let shouldSpeakFullResult = !isSameNoteRecentlyNamed
+            && (initial || reading.shouldAnnounceFullResult(comparedTo: lastPresentedReading))
         lastPresentedReading = reading
 
         if shouldSpeakFullResult {
+            lastAnnouncedNoteName = reading.noteName
+            lastFullAnnouncementAt = now
             speak(reading.spokenText(unit: displayUnit))
         } else if feedbackMode == .numberAndHaptics {
-            speak(reading.shortSpokenText(unit: displayUnit))
+            // Value only: repeating a note must not re-read its name, even when
+            // confidence dips (the short form would otherwise include it).
+            speak(reading.valueOnlyText(unit: displayUnit))
         } else {
             isAppTonePlaying = true
             do {

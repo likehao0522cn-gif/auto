@@ -81,8 +81,13 @@ public struct TuningFeedback: Equatable, Sendable {
         }
     }
 
-    public func displayText(unit: TuningDisplayUnit) -> String {
-        var text = "\(noteName)，\(resultText(unit: unit))"
+    /// Builds the result line. Callers may substitute a speech-safe note name;
+    /// every other part stays identical so screen text and speech never drift.
+    public func resultLine(unit: TuningDisplayUnit, name: String? = nil) -> String {
+        let displayName = name ?? noteName
+        // Comma plus space after the note name. Chinese TTS otherwise runs the
+        // octave digit straight into the frequency, e.g. "C7" + "2093.0 赫兹".
+        var text = "\(displayName)， \(resultText(unit: unit))"
         if unit == .hertz, targetFrequency > 0 {
             text += "，目标 \(String(format: "%.1f", targetFrequency)) 赫兹"
         }
@@ -92,8 +97,12 @@ public struct TuningFeedback: Equatable, Sendable {
         return text
     }
 
-    public func fullSpokenText(unit: TuningDisplayUnit) -> String {
-        var text = displayText(unit: unit)
+    public func displayText(unit: TuningDisplayUnit) -> String {
+        resultLine(unit: unit)
+    }
+
+    public func fullSpokenText(unit: TuningDisplayUnit, name: String? = nil) -> String {
+        var text = resultLine(unit: unit, name: name)
         if isLowConfidence {
             text += "，请再弹一次"
         }

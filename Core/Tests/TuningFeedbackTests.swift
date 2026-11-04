@@ -11,7 +11,7 @@ final class TuningFeedbackTests: XCTestCase {
         )
 
         XCTAssertEqual(feedback.direction, .inTune)
-        XCTAssertEqual(feedback.displayText(unit: .cents), "A4，准")
+        XCTAssertEqual(feedback.displayText(unit: .cents), "A4， 准")
     }
 
     func testHighAndLowDirections() {
@@ -67,6 +67,36 @@ final class TuningFeedbackTests: XCTestCase {
         XCTAssertTrue(feedback.fullSpokenText(unit: .hertz).contains("赫兹"))
         XCTAssertFalse(feedback.fullSpokenText(unit: .hertz).contains("音分"))
         XCTAssertTrue(feedback.fullSpokenText(unit: .cents).contains("音分"))
+    }
+
+    func testResultLineSeparatesNoteNameFromValue() {
+        let feedback = TuningFeedback(
+            noteName: "C7",
+            cents: 12,
+            confidence: 0.9,
+            toleranceCents: 3,
+            frequency: 2_093.0,
+            targetFrequency: 2_093.0
+        )
+
+        // A space after the comma stops Chinese TTS from running the octave
+        // digit straight into the frequency.
+        let text = feedback.displayText(unit: .hertz)
+        XCTAssertTrue(text.hasPrefix("C7， 2"), text)
+    }
+
+    func testFullSpokenTextAcceptsSpeechSafeName() {
+        let feedback = TuningFeedback(
+            noteName: "C#4",
+            cents: -5,
+            confidence: 0.9,
+            toleranceCents: 3
+        )
+
+        let spoken = feedback.fullSpokenText(unit: .cents, name: "升C四")
+        XCTAssertTrue(spoken.hasPrefix("升C四， "), spoken)
+        // The display form keeps the compact ASCII name.
+        XCTAssertTrue(feedback.displayText(unit: .cents).hasPrefix("C#4， "))
     }
 
     func testDirectionAndNoteChangesRequireFullResult() {
