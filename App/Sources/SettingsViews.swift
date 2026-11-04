@@ -112,6 +112,19 @@ struct TuningSettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
+            Section("重复音名") {
+                SwipeChoiceRow(
+                    title: "重复音名省略",
+                    options: RepeatNameWindow.allCases,
+                    selection: $appModel.repeatNameWindow,
+                    label: { $0.title }
+                )
+
+                Text(verbatim: "在这个时间内重复弹同一个音，只朗读新的数值，不再重复音名。")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
             Section("音名读法") {
                 SwipeChoiceRow(
                     title: "音名读法",

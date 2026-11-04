@@ -213,6 +213,9 @@ struct TunerView: View {
             viewModel.displayUnit = appModel.tuningDisplayUnit
             scheduleRestart(announceEntry: false)
         }
+        .onChange(of: appModel.repeatNameWindow) { _, newValue in
+            viewModel.repeatNoteNameWindow = newValue.rawValue
+        }
         .onChange(of: mode) { _, _ in
             scheduleRestart(announceEntry: false)
         }
@@ -378,6 +381,7 @@ struct TunerView: View {
 
     private func startNow(announceEntry: Bool) {
         viewModel.displayUnit = appModel.tuningDisplayUnit
+        viewModel.repeatNoteNameWindow = appModel.repeatNameWindow.rawValue
         viewModel.start(
             preset: appModel.selectedPreset,
             string: appModel.selectedTargetString,

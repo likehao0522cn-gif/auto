@@ -77,8 +77,8 @@ final class TunerViewModel: ObservableObject {
     @Published private(set) var needsMicrophonePermission = false
 
     /// How long a note name stays "known". Re-plucking the same note inside
-    /// this window reports only the new value.
-    static let repeatNoteNameWindow: TimeInterval = 8
+    /// this window reports only the new value. Configured in tuner settings.
+    var repeatNoteNameWindow: TimeInterval = 8
 
     private let audioEngine = TunerAudioEngine()
     private let speech = SpeechFeedback()
@@ -743,8 +743,10 @@ final class TunerViewModel: ObservableObject {
         // Repeating the same note shortly after it was named does not need the
         // name again; the user already knows which note they are holding.
         let now = Date()
-        let isSameNoteRecentlyNamed = lastAnnouncedNoteName == reading.noteName
-            && now.timeIntervalSince(lastFullAnnouncementAt) < Self.repeatNoteNameWindow
+        let window = repeatNoteNameWindow
+        let isSameNoteRecentlyNamed = window > 0
+            && lastAnnouncedNoteName == reading.noteName
+            && now.timeIntervalSince(lastFullAnnouncementAt) < window
 
         let shouldSpeakFullResult = !isSameNoteRecentlyNamed
             && (initial || reading.shouldAnnounceFullResult(comparedTo: lastPresentedReading))

@@ -27,6 +27,41 @@ enum AutoUpdateFeedbackMode: String, CaseIterable, Identifiable, Hashable {
     }
 }
 
+/// How long the app keeps treating a note as "already named". Inside the
+/// window a repeated note reports only the new value.
+enum RepeatNameWindow: Double, CaseIterable, Identifiable, Hashable {
+    case off = 0
+    case three = 3
+    case five = 5
+    case eight = 8
+    case fifteen = 15
+    case thirty = 30
+
+    var id: Double { rawValue }
+
+    var title: String {
+        switch self {
+        case .off: return "关闭"
+        case .three: return "3 秒"
+        case .five: return "5 秒"
+        case .eight: return "8 秒"
+        case .fifteen: return "15 秒"
+        case .thirty: return "30 秒"
+        }
+    }
+
+    var spokenTitle: String {
+        switch self {
+        case .off: return "关闭，每次都朗读音名"
+        case .three: return "3 秒"
+        case .five: return "5 秒"
+        case .eight: return "8 秒"
+        case .fifteen: return "15 秒"
+        case .thirty: return "30 秒"
+        }
+    }
+}
+
 enum NoteNamingStyle: String, CaseIterable, Identifiable, Hashable {
     case letter
     case solfege
@@ -165,6 +200,11 @@ final class AppModel: ObservableObject {
         didSet { save() }
     }
 
+    /// Window during which a repeated note is announced by value only.
+    @Published var repeatNameWindow: RepeatNameWindow {
+        didSet { save() }
+    }
+
     @Published var language: AppLanguage {
         didSet { save() }
     }
@@ -225,6 +265,8 @@ final class AppModel: ObservableObject {
         self.tuningDisplayUnit = TuningDisplayUnit(
             rawValue: defaults.string(forKey: Keys.tuningDisplayUnit) ?? ""
         ) ?? .cents
+        let storedRepeat = defaults.object(forKey: Keys.repeatNameWindow) as? Double
+        self.repeatNameWindow = storedRepeat.flatMap(RepeatNameWindow.init(rawValue:)) ?? .eight
         let storedLanguage = AppLanguage(
             rawValue: defaults.string(forKey: Keys.language) ?? ""
         ) ?? .simplifiedChinese
@@ -300,6 +342,7 @@ final class AppModel: ObservableObject {
         noteNamingStyle = .letter
         referenceToneTimbre = .sine
         tuningDisplayUnit = .cents
+        repeatNameWindow = .eight
         language = .simplifiedChinese
         tapTempoHapticsEnabled = true
         tapTempoCountdownHintEnabled = true
@@ -320,6 +363,7 @@ final class AppModel: ObservableObject {
         defaults.set(noteNamingStyle.rawValue, forKey: Keys.noteNamingStyle)
         defaults.set(referenceToneTimbre.rawValue, forKey: Keys.referenceToneTimbre)
         defaults.set(tuningDisplayUnit.rawValue, forKey: Keys.tuningDisplayUnit)
+        defaults.set(repeatNameWindow.rawValue, forKey: Keys.repeatNameWindow)
         defaults.set(language.rawValue, forKey: Keys.language)
         defaults.set(tapTempoHapticsEnabled, forKey: Keys.tapTempoHapticsEnabled)
         defaults.set(tapTempoCountdownHintEnabled, forKey: Keys.tapTempoCountdownHintEnabled)
@@ -343,6 +387,7 @@ final class AppModel: ObservableObject {
         static let noteNamingStyle = "noteNamingStyle"
         static let referenceToneTimbre = "referenceToneTimbre"
         static let tuningDisplayUnit = "tuningDisplayUnit"
+        static let repeatNameWindow = "repeatNameWindow"
         static let language = "language"
         static let tapTempoHapticsEnabled = "tapTempoHapticsEnabled"
         static let tapTempoCountdownHintEnabled = "tapTempoCountdownHintEnabled"
