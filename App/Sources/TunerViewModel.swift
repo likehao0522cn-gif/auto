@@ -3,6 +3,23 @@ import Foundation
 import TuneCore
 import UIKit
 
+/// Converts display note names such as "C#4" into speech-safe Chinese.
+/// Chinese TTS reads a bare "#" as an extra word; the ASCII letters stay.
+enum SpokenNoteName {
+    static func convert(_ displayName: String) -> String {
+        guard displayName.contains("#") else { return displayName }
+        let base = displayName.replacingOccurrences(of: "#", with: "")
+        let octaveMap: [Character: String] = [
+            "0": "零", "1": "一", "2": "二", "3": "三", "4": "四",
+            "5": "五", "6": "六", "7": "七", "8": "八", "9": "九"
+        ]
+        guard let letter = base.first else { return base }
+        let rest = String(base.dropFirst())
+        let spokenOctave = rest.compactMap { octaveMap[$0] }.joined()
+        return "升\(letter)\(spokenOctave.isEmpty ? rest : spokenOctave)"
+    }
+}
+
 struct TuningReading: Equatable {
     let noteName: String
     let targetMIDI: Int
@@ -25,28 +42,13 @@ struct TuningReading: Equatable {
         feedback.displayText
     }
 
-    /// Chinese TTS reads a bare "#" as an extra word, so sharps are spelled
-    /// out for speech while the visible text keeps "C#4".
-    static func spokenNoteName(_ displayName: String) -> String {
-        guard displayName.contains("#") else { return displayName }
-        let base = displayName.replacingOccurrences(of: "#", with: "")
-        let octaveMap: [Character: String] = [
-            "0": "零", "1": "一", "2": "二", "3": "三", "4": "四",
-            "5": "五", "6": "六", "7": "七", "8": "八", "9": "九"
-        ]
-        guard let letter = base.first else { return base }
-        let rest = String(base.dropFirst())
-        let spokenOctave = rest.compactMap { octaveMap[$0] }.joined()
-        return "升\(letter)\(spokenOctave.isEmpty ? rest : spokenOctave)"
-    }
-
     var spokenText: String {
-        "\(Self.spokenNoteName(noteName))，\(PitchMath.formatCents(cents))"
+        "\(SpokenNoteName.convert(noteName))，\(PitchMath.formatCents(cents))"
     }
 
     var shortSpokenText: String {
         let short = feedback.shortSpokenText
-        return Self.spokenNoteName(short)
+        return SpokenNoteName.convert(short)
     }
 
     func shouldAnnounceFullResult(comparedTo previous: TuningReading?) -> Bool {
@@ -547,7 +549,7 @@ final class TunerViewModel: ObservableObject {
 
     private var entryAnnouncement: String {
         let target = targetString.map {
-            Self.spokenNoteName(
+            SpokenNoteName.convert(
                 NoteNamingFormatter.stringDisplayName($0, style: namingStyle)
             )
         } ?? mode.title
