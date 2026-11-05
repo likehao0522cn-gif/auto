@@ -84,10 +84,14 @@ struct TunerView: View {
             }
         }
         .onChange(of: appModel.selectedPresetID) { _, _ in
+            // Switching instrument also switches the detection mode and needs
+            // its own announcement so the user hears which instrument is live.
             let defaultMode = appModel.selectedPreset.defaultMode
             if mode != defaultMode {
                 mode = defaultMode
             }
+            viewModel.displayUnit = appModel.tuningDisplayUnit
+            viewModel.repeatNoteNameWindow = appModel.repeatNameWindow.rawValue
             scheduleRestart(announceEntry: false)
             if UIAccessibility.isVoiceOverRunning {
                 UIAccessibility.post(
@@ -96,39 +100,11 @@ struct TunerView: View {
                 )
             }
         }
-        .onChange(of: appModel.selectedStringID) { _, _ in
-            scheduleRestart(announceEntry: false)
-        }
-        .onChange(of: appModel.pianoTargetMIDI) { _, _ in
-            scheduleRestart(announceEntry: false)
-        }
-        // concertA is derived per instrument, so watch the underlying values.
-        .onChange(of: appModel.concertAOverrides) { _, _ in
-            scheduleRestart(announceEntry: false)
-        }
-        .onChange(of: appModel.defaultConcertA) { _, _ in
-            scheduleRestart(announceEntry: false)
-        }
-        .onChange(of: appModel.toleranceCents) { _, _ in
-            scheduleRestart(announceEntry: false)
-        }
-        .onChange(of: appModel.autoUpdateFeedbackMode) { _, _ in
-            scheduleRestart(announceEntry: false)
-        }
-        .onChange(of: appModel.noteNamingStyle) { _, _ in
-            scheduleRestart(announceEntry: false)
-        }
-        .onChange(of: appModel.referenceToneTimbre) { _, _ in
-            scheduleRestart(announceEntry: false)
-        }
-        .onChange(of: appModel.tuningDisplayUnit) { _, _ in
+        .onChange(of: tunerSettingsSignature) { _, _ in
+            // One observer for the remaining settings: a long chain of onChange
+            // modifiers made the SwiftUI body too complex for the type checker.
             viewModel.displayUnit = appModel.tuningDisplayUnit
-            scheduleRestart(announceEntry: false)
-        }
-        .onChange(of: appModel.repeatNameWindow) { _, newValue in
-            viewModel.repeatNoteNameWindow = newValue.rawValue
-        }
-        .onChange(of: mode) { _, _ in
+            viewModel.repeatNoteNameWindow = appModel.repeatNameWindow.rawValue
             scheduleRestart(announceEntry: false)
         }
         .sheet(isPresented: $isShowingInstrumentPicker, onDismiss: {
@@ -173,6 +149,25 @@ struct TunerView: View {
         ToolbarItem(placement: .topBarTrailing) {
             settingsButton
         }
+    }
+
+    /// Combines every tuner setting that requires a restart, so a single
+    /// onChange can watch all of them.
+    private var tunerSettingsSignature: String {
+        [
+            appModel.selectedPresetID,
+            appModel.selectedStringID ?? "",
+            String(appModel.pianoTargetMIDI),
+            String(appModel.concertA),
+            String(appModel.defaultConcertA),
+            String(appModel.toleranceCents),
+            appModel.autoUpdateFeedbackMode.rawValue,
+            appModel.noteNamingStyle.rawValue,
+            appModel.referenceToneTimbre.rawValue,
+            appModel.tuningDisplayUnit.rawValue,
+            String(appModel.repeatNameWindow.rawValue),
+            mode.rawValue
+        ].joined(separator: "|")
     }
 
     private var settingsButton: some View {
