@@ -16,119 +16,9 @@ struct TunerView: View {
     @State private var isShowingSettings = false
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                resultCard
-
-                Picker(selection: $mode) {
-                    ForEach(DetectionMode.allCases) { mode in
-                        Text(verbatim: mode.title).tag(mode)
-                    }
-                } label: {
-                    Text(verbatim: "检测模式")
-                }
-                .pickerStyle(.segmented)
-                .accessibilityLabel(Text(verbatim: "检测模式"))
-
-                VStack(spacing: 0) {
-                    Button {
-                        viewModel.pauseForOverlay()
-                        isShowingInstrumentPicker = true
-                    } label: {
-                        selectorRow(title: "乐器", value: appModel.selectedPreset.displayName)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(Text(verbatim: "乐器"))
-                    .accessibilityValue(Text(verbatim: appModel.selectedPreset.displayName))
-                    .accessibilityHint(Text(verbatim: "双击选择，或上下清扫直接调整"))
-                    .accessibilityAdjustableAction { direction in
-                        switch direction {
-                        case .increment: stepInstrument(1)
-                        case .decrement: stepInstrument(-1)
-                        @unknown default: break
-                        }
-                    }
-
-                    if !appModel.selectedPreset.strings.isEmpty {
-                        Divider()
-                        NavigationLink {
-                            StringPickerView()
-                        } label: {
-                            selectorRow(
-                                title: "弦位",
-                                value: appModel.selectedTargetDisplayName ?? "未选择"
-                            )
-                        }
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityLabel(Text(verbatim: "弦位：\(appModel.selectedTargetDisplayName ?? "未选择")"))
-                    } else if appModel.selectedPreset.isPiano {
-                        Divider()
-                        NavigationLink {
-                            PianoTargetPickerView()
-                        } label: {
-                            selectorRow(
-                                title: "目标音",
-                                value: mode == .automatic
-                                    ? "自动识别"
-                                    : (appModel.selectedTargetDisplayName ?? "未选择")
-                            )
-                        }
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityLabel(Text(verbatim: "目标音：\(mode == .automatic ? "自动识别" : (appModel.selectedTargetDisplayName ?? "未选择"))"))
-                    }
-                }
-                .background(Color(uiColor: .secondarySystemGroupedBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 18))
-
-                actionButtons
-
-                if let errorMessage = viewModel.errorMessage {
-                    Text(verbatim: errorMessage)
-                        .foregroundStyle(.red)
-
-                    if viewModel.needsMicrophonePermission {
-                        Button {
-                            viewModel.retryMicrophonePermission()
-                        } label: {
-                            Text(verbatim: "重新尝试聆听")
-                                .frame(maxWidth: .infinity, minHeight: 44)
-                        }
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityLabel(Text(verbatim: "重新尝试聆听"))
-                        .buttonStyle(.bordered)
-
-                        Button {
-                            openSystemSettings()
-                        } label: {
-                            Text(verbatim: "打开系统设置")
-                                .frame(maxWidth: .infinity, minHeight: 44)
-                        }
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityLabel(Text(verbatim: "打开系统设置"))
-                        .buttonStyle(.borderedProminent)
-                    }
-                }
-
-                Text(verbatim: viewModel.isListening ? "麦克风正在持续监听" : "麦克风未在监听")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-            .padding()
-        }
+        tunerContent
         .navigationTitle("调音器")
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    viewModel.pauseForOverlay()
-                    isShowingSettings = true
-                } label: {
-                    Image(systemName: "gearshape")
-                }
-                .accessibilityLabel(Text(verbatim: "调音器设置"))
-                .accessibilityHint(Text(verbatim: "包含当前乐器的标准音高、准音容差、显示单位、重复音名和自动检测"))
-            }
-        }
+        .toolbar { settingsToolbar }
         .onAppear {
             restartTask?.cancel()
             hasAppeared = true
@@ -275,6 +165,128 @@ struct TunerView: View {
                         }
                     }
             }
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var settingsToolbar: some ToolbarContent {
+        ToolbarItem(placement: .topBarTrailing) {
+            settingsButton
+        }
+    }
+
+    private var settingsButton: some View {
+        Button {
+            viewModel.pauseForOverlay()
+            isShowingSettings = true
+        } label: {
+            Image(systemName: "gearshape")
+        }
+        .accessibilityLabel(Text(verbatim: "调音器设置"))
+        .accessibilityHint(Text(verbatim: "包含当前乐器的标准音高、准音容差、显示单位、重复音名和自动检测"))
+    }
+
+    private var tunerContent: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                resultCard
+
+                Picker(selection: $mode) {
+                    ForEach(DetectionMode.allCases) { mode in
+                        Text(verbatim: mode.title).tag(mode)
+                    }
+                } label: {
+                    Text(verbatim: "检测模式")
+                }
+                .pickerStyle(.segmented)
+                .accessibilityLabel(Text(verbatim: "检测模式"))
+
+                VStack(spacing: 0) {
+                    Button {
+                        viewModel.pauseForOverlay()
+                        isShowingInstrumentPicker = true
+                    } label: {
+                        selectorRow(title: "乐器", value: appModel.selectedPreset.displayName)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(Text(verbatim: "乐器"))
+                    .accessibilityValue(Text(verbatim: appModel.selectedPreset.displayName))
+                    .accessibilityHint(Text(verbatim: "双击选择，或上下清扫直接调整"))
+                    .accessibilityAdjustableAction { direction in
+                        switch direction {
+                        case .increment: stepInstrument(1)
+                        case .decrement: stepInstrument(-1)
+                        @unknown default: break
+                        }
+                    }
+
+                    if !appModel.selectedPreset.strings.isEmpty {
+                        Divider()
+                        NavigationLink {
+                            StringPickerView()
+                        } label: {
+                            selectorRow(
+                                title: "弦位",
+                                value: appModel.selectedTargetDisplayName ?? "未选择"
+                            )
+                        }
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(Text(verbatim: "弦位：\(appModel.selectedTargetDisplayName ?? "未选择")"))
+                    } else if appModel.selectedPreset.isPiano {
+                        Divider()
+                        NavigationLink {
+                            PianoTargetPickerView()
+                        } label: {
+                            selectorRow(
+                                title: "目标音",
+                                value: mode == .automatic
+                                    ? "自动识别"
+                                    : (appModel.selectedTargetDisplayName ?? "未选择")
+                            )
+                        }
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(Text(verbatim: "目标音：\(mode == .automatic ? "自动识别" : (appModel.selectedTargetDisplayName ?? "未选择"))"))
+                    }
+                }
+                .background(Color(uiColor: .secondarySystemGroupedBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 18))
+
+                actionButtons
+
+                if let errorMessage = viewModel.errorMessage {
+                    Text(verbatim: errorMessage)
+                        .foregroundStyle(.red)
+
+                    if viewModel.needsMicrophonePermission {
+                        Button {
+                            viewModel.retryMicrophonePermission()
+                        } label: {
+                            Text(verbatim: "重新尝试聆听")
+                                .frame(maxWidth: .infinity, minHeight: 44)
+                        }
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(Text(verbatim: "重新尝试聆听"))
+                        .buttonStyle(.bordered)
+
+                        Button {
+                            openSystemSettings()
+                        } label: {
+                            Text(verbatim: "打开系统设置")
+                                .frame(maxWidth: .infinity, minHeight: 44)
+                        }
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(Text(verbatim: "打开系统设置"))
+                        .buttonStyle(.borderedProminent)
+                    }
+                }
+
+                Text(verbatim: viewModel.isListening ? "麦克风正在持续监听" : "麦克风未在监听")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+
+            }
+            .padding()
         }
     }
 
