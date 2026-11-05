@@ -194,7 +194,11 @@ struct TunerView: View {
         .onChange(of: appModel.pianoTargetMIDI) { _, _ in
             scheduleRestart(announceEntry: false)
         }
-        .onChange(of: appModel.concertA) { _, _ in
+        // concertA is derived per instrument, so watch the underlying values.
+        .onChange(of: appModel.concertAOverrides) { _, _ in
+            scheduleRestart(announceEntry: false)
+        }
+        .onChange(of: appModel.defaultConcertA) { _, _ in
             scheduleRestart(announceEntry: false)
         }
         .onChange(of: appModel.toleranceCents) { _, _ in

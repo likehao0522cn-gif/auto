@@ -79,14 +79,19 @@ struct TuningSettingsView: View {
 
     var body: some View {
         Form {
-            Section("标准音高") {
-                AdjustableValueRow(
-                    title: "标准音高",
-                    value: $appModel.concertA,
-                    range: 392...466,
-                    step: 1,
-                    valueLabel: { "\(Int($0)) 赫兹" }
-                )
+            Section {
+                NavigationLink {
+                    ConcertPitchView()
+                } label: {
+                    settingRow(
+                        "标准音高",
+                        value: "\(Int(appModel.concertA)) 赫兹"
+                    )
+                }
+            } header: {
+                Text(verbatim: "标准音高")
+            } footer: {
+                Text(verbatim: "每个乐器可以单独设置。当前乐器：\(appModel.selectedPreset.displayName)。")
             }
 
             Section("准音容差") {

@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import SwiftUI
 import TuneCore
 
 enum AutoUpdateFeedbackMode: String, CaseIterable, Identifiable, Hashable {
@@ -174,8 +175,31 @@ final class AppModel: ObservableObject {
         didSet { save() }
     }
 
-    @Published var concertA: Double {
+    /// Standard pitch (A4) for each instrument, keyed by preset id. Instruments
+    /// that were never changed fall back to `defaultConcertA`, so a user can
+    /// keep 440 for most instruments and 442 for one of them.
+    @Published var concertAOverrides: [String: Double] {
         didSet { save() }
+    }
+
+    /// Standard pitch used by any instrument without its own value.
+    @Published var defaultConcertA: Double = 440 {
+        didSet { save() }
+    }
+
+    /// Standard pitch in effect for the current instrument. Reading and writing
+    /// this is how the rest of the app works with standard pitch.
+    var concertA: Double {
+        get { concertAOverrides[selectedPresetID] ?? defaultConcertA }
+        set {
+            let clamped = min(466, max(392, newValue.rounded()))
+            if abs(clamped - defaultConcertA) < 0.001 {
+                // Back to the shared value; drop the override entirely.
+                concertAOverrides[selectedPresetID] = nil
+            } else {
+                concertAOverrides[selectedPresetID] = clamped
+            }
+        }
     }
 
     @Published var toleranceCents: Double {
@@ -251,7 +275,11 @@ final class AppModel: ObservableObject {
         self.selectedPresetID = preset.id
         self.selectedStringID = defaults.string(forKey: Keys.stringID) ?? preset.strings.first?.id
         self.pianoTargetMIDI = defaults.object(forKey: Keys.pianoTargetMIDI) as? Int ?? 69
-        self.concertA = defaults.object(forKey: Keys.concertA) as? Double ?? 440
+        // Migration: older versions stored one global A4 value. Adopt it as the
+        // default so existing users keep their tuning.
+        let legacyConcertA = defaults.object(forKey: Keys.concertA) as? Double ?? 440
+        self.defaultConcertA = legacyConcertA
+        self.concertAOverrides = (defaults.dictionary(forKey: Keys.concertAOverrides) as? [String: Double]) ?? [:]
         self.toleranceCents = defaults.object(forKey: Keys.toleranceCents) as? Double ?? 3
         self.autoUpdateFeedbackMode = AutoUpdateFeedbackMode(
             rawValue: defaults.string(forKey: Keys.autoUpdateFeedbackMode) ?? ""
@@ -336,7 +364,8 @@ final class AppModel: ObservableObject {
         selectedPresetID = PresetCatalog.guitar.id
         selectedStringID = PresetCatalog.guitar.strings.first?.id
         pianoTargetMIDI = 69
-        concertA = 440
+        defaultConcertA = 440
+        concertAOverrides = [:]
         toleranceCents = 3
         autoUpdateFeedbackMode = .numberAndHaptics
         noteNamingStyle = .letter
@@ -357,7 +386,8 @@ final class AppModel: ObservableObject {
         defaults.set(selectedPresetID, forKey: Keys.presetID)
         defaults.set(selectedStringID, forKey: Keys.stringID)
         defaults.set(pianoTargetMIDI, forKey: Keys.pianoTargetMIDI)
-        defaults.set(concertA, forKey: Keys.concertA)
+        defaults.set(defaultConcertA, forKey: Keys.concertA)
+        defaults.set(concertAOverrides, forKey: Keys.concertAOverrides)
         defaults.set(toleranceCents, forKey: Keys.toleranceCents)
         defaults.set(autoUpdateFeedbackMode.rawValue, forKey: Keys.autoUpdateFeedbackMode)
         defaults.set(noteNamingStyle.rawValue, forKey: Keys.noteNamingStyle)
@@ -382,6 +412,7 @@ final class AppModel: ObservableObject {
         static let stringID = "selectedStringID"
         static let pianoTargetMIDI = "pianoTargetMIDI"
         static let concertA = "concertA"
+        static let concertAOverrides = "concertAOverrides"
         static let toleranceCents = "toleranceCents"
         static let autoUpdateFeedbackMode = "autoUpdateFeedbackMode"
         static let noteNamingStyle = "noteNamingStyle"
