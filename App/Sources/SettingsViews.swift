@@ -161,6 +161,18 @@ struct TuningSettingsView: View {
         }
         .navigationTitle("调音设置")
     }
+
+    private func settingRow(_ title: String, value: String) -> some View {
+        HStack {
+            Text(verbatim: title)
+            Spacer()
+            Text(verbatim: value)
+                .foregroundStyle(.secondary)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(verbatim: title))
+        .accessibilityValue(Text(verbatim: value))
+    }
 }
 
 struct SoundSettingsView: View {
