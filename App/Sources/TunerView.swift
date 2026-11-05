@@ -12,6 +12,8 @@ struct TunerView: View {
     @State private var restartTask: Task<Void, Never>?
     @State private var isShowingHelp = false
     @State private var isShowingInstrumentPicker = false
+    /// True while the settings screen is pushed on top of the tuner.
+    @State private var isShowingSettings = false
 
     var body: some View {
         ScrollView {
@@ -115,6 +117,18 @@ struct TunerView: View {
             .padding()
         }
         .navigationTitle("调音器")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    viewModel.pauseForOverlay()
+                    isShowingSettings = true
+                } label: {
+                    Image(systemName: "gearshape")
+                }
+                .accessibilityLabel(Text(verbatim: "调音器设置"))
+                .accessibilityHint(Text(verbatim: "包含当前乐器的标准音高、准音容差、显示单位、重复音名和自动检测"))
+            }
+        }
         .onAppear {
             restartTask?.cancel()
             hasAppeared = true
@@ -159,12 +173,16 @@ struct TunerView: View {
         }
         .onDisappear {
             restartTask?.cancel()
-            if isShowingHelp {
+            // Pushing the settings screen must not tear down detection; pause
+            // so the microphone is released while the user adjusts options,
+            // and resume automatically when they come back.
+            if isShowingHelp || isShowingSettings {
                 return
             }
             hasAppeared = false
             viewModel.pageDidDisappear()
         }
+
         .onChange(of: scenePhase) { _, current in
             switch current {
             case .background, .inactive:
@@ -228,6 +246,16 @@ struct TunerView: View {
             viewModel.resume()
         }) {
             InstrumentPickerView()
+        }
+        .sheet(isPresented: $isShowingSettings, onDismiss: {
+            isShowingSettings = false
+            if hasAppeared, scenePhase == .active, viewModel.isPaused {
+                viewModel.resume()
+            }
+        }) {
+            NavigationStack {
+                TuningSettingsView()
+            }
         }
         .sheet(isPresented: $isShowingHelp, onDismiss: {
             guard hasAppeared, viewModel.isPaused else { return }

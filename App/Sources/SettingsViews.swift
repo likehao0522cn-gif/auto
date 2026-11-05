@@ -76,6 +76,7 @@ struct SettingsView: View {
 
 struct TuningSettingsView: View {
     @EnvironmentObject private var appModel: AppModel
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         Form {
@@ -91,7 +92,7 @@ struct TuningSettingsView: View {
             } header: {
                 Text(verbatim: "标准音高")
             } footer: {
-                Text(verbatim: "每个乐器可以单独设置。当前乐器：\(appModel.selectedPreset.displayName)。")
+                Text(verbatim: "这里改的是当前乐器 \(appModel.selectedPreset.displayName) 的标准音高，其他乐器不受影响。")
             }
 
             Section("准音容差") {
@@ -159,7 +160,18 @@ struct TuningSettingsView: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .navigationTitle("调音设置")
+        .navigationTitle("调音器设置")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button {
+                    dismiss()
+                } label: {
+                    Text(verbatim: "关闭")
+                }
+                .accessibilityLabel(Text(verbatim: "关闭调音器设置"))
+            }
+        }
     }
 
     private func settingRow(_ title: String, value: String) -> some View {
