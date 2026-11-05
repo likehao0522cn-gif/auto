@@ -8,6 +8,7 @@ struct MetronomeView: View {
     @State private var isShowingBPMInput = false
     @State private var bpmInputError: String?
     @FocusState private var isBPMInputFocused: Bool
+    @State private var isShowingFavorites = false
 
     private var timeSignatureBinding: Binding<TimeSignature> {
         Binding(
@@ -36,6 +37,9 @@ struct MetronomeView: View {
                 .padding(.bottom, 32)
         }
         .navigationTitle("节拍器")
+        .sheet(isPresented: $isShowingFavorites) {
+            FavoriteTempoListView()
+        }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 NavigationLink {
@@ -93,6 +97,15 @@ struct MetronomeView: View {
     private var secondaryActions: some View {
         VStack(spacing: 12) {
             HStack(spacing: 12) {
+                Button {
+                    isShowingFavorites = true
+                } label: {
+                    secondaryActionLabel("常用速度", systemImage: "star")
+                }
+                .buttonStyle(.bordered)
+                .accessibilityLabel(Text(verbatim: "常用速度"))
+                .accessibilityHint(Text(verbatim: "打开保存好的速度列表"))
+
                 NavigationLink {
                     TapTempoView()
                 } label: {
@@ -100,26 +113,33 @@ struct MetronomeView: View {
                 }
                 .buttonStyle(.bordered)
                 .accessibilityLabel(Text(verbatim: "测速"))
-
-                Button {
-                    bpmInput = "\(Int(metronome.configuration.bpm))"
-                    bpmInputError = nil
-                    if !isShowingBPMInput {
-                        withAnimation {
-                            isShowingBPMInput = true
-                        }
-                    }
-                    Task { @MainActor in
-                        await Task.yield()
-                        isBPMInputFocused = true
-                    }
-                } label: {
-                    secondaryActionLabel("输入速度", systemImage: "keyboard")
-                }
-                .buttonStyle(.bordered)
-                .accessibilityLabel(Text(verbatim: "输入速度"))
-
             }
+
+            // Full-width so the three actions never crowd each other on a
+            // narrow screen, which matters for users who tap by touch.
+            Button {
+                bpmInput = "\(Int(metronome.configuration.bpm))"
+                bpmInputError = nil
+                if !isShowingBPMInput {
+                    withAnimation {
+                        isShowingBPMInput = true
+                    }
+                }
+                Task { @MainActor in
+                    await Task.yield()
+                    isBPMInputFocused = true
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "keyboard")
+                        .font(.system(size: 18, weight: .semibold))
+                    Text(verbatim: "输入速度")
+                        .font(.subheadline.weight(.semibold))
+                }
+                .frame(maxWidth: .infinity, minHeight: 50)
+            }
+            .buttonStyle(.bordered)
+            .accessibilityLabel(Text(verbatim: "输入速度"))
 
             if isShowingBPMInput {
                 manualBPMInput

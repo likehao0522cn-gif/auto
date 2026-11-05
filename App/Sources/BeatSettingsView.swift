@@ -39,6 +39,10 @@ struct BeatSettingsView: View {
                 }
             }
 
+            Section("常用速度") {
+                FavoritesSettingsRows(store: metronome.favorites)
+            }
+
             Section("测速") {
                 Toggle(isOn: $appModel.tapTempoCountdownHintEnabled) {
                     Text(verbatim: "显示还差几拍提示")
@@ -194,5 +198,29 @@ private struct MetronomeTimbreSettingsView: View {
         }
         .navigationTitle("节拍器音色")
         .navigationBarTitleDisplayMode(.inline)
+    }
+}
+/// Rows that edit the favorite tempo store. A dedicated subview is used so
+/// `@ObservedObject` subscribes to the shared store and the rows refresh as
+/// soon as they change.
+private struct FavoritesSettingsRows: View {
+    @ObservedObject var store: FavoriteTempoStore
+
+    var body: some View {
+        Toggle(isOn: $store.autoAddEnabled) {
+            Text(verbatim: "自动加入常用速度")
+        }
+        .accessibilityHint(Text(verbatim: "同一个速度使用满 5 次且累计播放满 2 分钟，会自动加入常用速度列表"))
+
+        SwipeChoiceRow(
+            title: "常用速度排序",
+            options: FavoriteTempoSort.allCases,
+            selection: $store.sortOrder,
+            label: { $0.title }
+        )
+
+        Text(verbatim: "常用速度最多保存 \(FavoriteTempoRules.capacity) 个。")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
     }
 }

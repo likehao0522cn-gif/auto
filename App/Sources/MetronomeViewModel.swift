@@ -38,6 +38,8 @@ final class MetronomeViewModel: ObservableObject {
 
     private let engine = MetronomeAudioEngine()
     private let speech = SpeechFeedback()
+    /// Usage statistics and the favorite tempo list.
+    let favorites: FavoriteTempoStore
     private let defaults: UserDefaults
     private var interruptionObserver: NSObjectProtocol?
     private var hapticTask: Task<Void, Never>?
@@ -45,9 +47,15 @@ final class MetronomeViewModel: ObservableObject {
     /// Live changes used to rebuild the whole engine on every tap, which made
     /// +/- feel sluggish and could drop a beat. Coalesce bursts into one restart.
     private var restartTask: Task<Void, Never>?
+    /// Accumulates playback time into the tempo statistics.
+    private var playTimeTask: Task<Void, Never>?
 
-    init(defaults: UserDefaults = .standard) {
+    init(
+        defaults: UserDefaults = .standard,
+        favorites: FavoriteTempoStore? = nil
+    ) {
         self.defaults = defaults
+        self.favorites = favorites ?? FavoriteTempoStore(defaults: defaults)
         // Clean up preferences left behind by removed features (count-in was dropped).
         defaults.removeObject(forKey: Keys.legacyCountIn)
 
@@ -104,6 +112,8 @@ final class MetronomeViewModel: ObservableObject {
     func stop() {
         restartTask?.cancel()
         restartTask = nil
+        playTimeTask?.cancel()
+        playTimeTask = nil
         hapticTask?.cancel()
         hapticTask = nil
         engine.stop()
@@ -122,6 +132,20 @@ final class MetronomeViewModel: ObservableObject {
     func applyManualBPM(_ bpm: Double) {
         setBPM(bpm)
         speak("速度已设为 \(Int(configuration.bpm)) BPM")
+    }
+
+    /// Applies a saved tempo. The value is announced because the user picked it
+    /// from a list rather than reading it off the main screen.
+    func applyFavoriteTempo(_ bpm: Int) {
+        setBPM(Double(bpm))
+        speak("速度已设为 \(Int(configuration.bpm)) BPM")
+    }
+
+    /// Adds the tempo currently in use to the favorites list.
+    /// Returns false when the list is full.
+    @discardableResult
+    func addCurrentTempoToFavorites() -> Bool {
+        favorites.add(bpm: Int(configuration.bpm))
     }
 
     func setBPM(_ bpm: Double) {
@@ -147,6 +171,8 @@ final class MetronomeViewModel: ObservableObject {
             try engine.start(configuration: configuration, timbre: timbre)
             isPlaying = true
             errorMessage = nil
+            favorites.recordStart(bpm: Int(configuration.bpm))
+            startPlayTimeTracking()
             beginPlaybackFeedback(announceStart: announceStart)
         } catch {
             isPlaying = false
@@ -172,6 +198,27 @@ final class MetronomeViewModel: ObservableObject {
         hapticTask?.cancel()
         hapticTask = nil
         startEngine(announceStart: false)
+    }
+
+    /// Adds elapsed playback time to the current tempo every two seconds.
+    /// Frequent small updates keep the statistic accurate without writing to
+    /// disk on every beat.
+    private func startPlayTimeTracking() {
+        playTimeTask?.cancel()
+        playTimeTask = Task { @MainActor [weak self] in
+            var lastTick = Date()
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(2))
+                guard !Task.isCancelled, let self, self.isPlaying else { return }
+                let now = Date()
+                let elapsed = now.timeIntervalSince(lastTick)
+                lastTick = now
+                self.favorites.recordPlayback(
+                    bpm: Int(self.configuration.bpm),
+                    seconds: elapsed
+                )
+            }
+        }
     }
 
     private func beginPlaybackFeedback(announceStart: Bool) {
