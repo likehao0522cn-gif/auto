@@ -23,7 +23,8 @@ public enum MultiplePitchDetector {
         primaryFrequency: Double?,
         primaryConfidence: Double,
         rms: Double,
-        isPitchSteady: Bool = true
+        isPitchSteady: Bool = true,
+        profile: DetectionProfile = DetectionProfile.profile(for: .chromatic)
     ) -> MultiplePitchEstimate {
         // Real instruments (erhu, low piano strings) have unstable partials and
         // beat effects. Calling those "multiple notes" is a false positive, so
@@ -96,9 +97,12 @@ public enum MultiplePitchDetector {
         // Measured on synthetic piano/guitar-like signals: one struck note
         // leaves non-harmonic peaks under 5% of the fundamental, while two
         // genuine simultaneous notes exceed 45%. 30% sits safely between.
-        // Low strings and bowed instruments leak a lot of energy between
-        // harmonics, so the bar is higher there.
-        let requiredRatio = primaryFrequency < 120 ? 0.55 : 0.30
+        // The family profile sets the base bar; very low notes get an extra
+        // margin because their partials are densely packed.
+        let baseRatio = profile.multiPitchRatio
+        let requiredRatio = primaryFrequency < 120
+            ? min(0.75, baseRatio + 0.20)
+            : baseRatio
         guard let secondStrongest,
               secondStrongest.1 > fundamentalMagnitude * requiredRatio,
               secondStrongest.1 > 0.02 else {

@@ -61,6 +61,25 @@ public struct InstrumentPreset: Identifiable, Hashable, Sendable {
 
     public var isPiano: Bool { kind == .piano }
     public var isChromatic: Bool { kind == .chromatic }
+
+    /// Acoustic family drives the detector thresholds. Bowed instruments need
+    /// a very different profile from plucked ones, so the coarse `kind` is not
+    /// enough on its own.
+    public var acousticFamily: AcousticFamily {
+        switch kind {
+        case .piano:
+            return .piano
+        case .chromatic:
+            return .chromatic
+        case .strings:
+            switch id {
+            case "erhu":
+                return .bowed
+            default:
+                return .plucked
+            }
+        }
+    }
 }
 
 public enum PresetCatalog {

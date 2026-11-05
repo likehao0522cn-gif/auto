@@ -91,6 +91,8 @@ final class TunerViewModel: ObservableObject {
     private var feedbackMode: AutoUpdateFeedbackMode = .numberAndHaptics
     private var namingStyle: NoteNamingStyle = .letter
     private var referenceTimbre: ReferenceToneTimbre = .sine
+    /// Thresholds for the current instrument's acoustic family.
+    private var detectionProfile: DetectionProfile = DetectionProfile.profile(for: .chromatic)
     var displayUnit: TuningDisplayUnit = .cents
 
     private var previousRMS: Double = 0
@@ -191,6 +193,7 @@ final class TunerViewModel: ObservableObject {
         self.feedbackMode = feedbackMode
         self.namingStyle = namingStyle
         self.referenceTimbre = referenceTimbre
+        self.detectionProfile = DetectionProfile.profile(for: preset.acousticFamily)
         resetDetectionState()
         reading = nil
         liveReading = nil
@@ -247,6 +250,7 @@ final class TunerViewModel: ObservableObject {
         self.feedbackMode = feedbackMode
         self.namingStyle = namingStyle
         self.referenceTimbre = referenceTimbre
+        self.detectionProfile = DetectionProfile.profile(for: preset.acousticFamily)
         resetDetectionState()
         reading = nil
         liveReading = nil
@@ -385,6 +389,7 @@ final class TunerViewModel: ObservableObject {
         self.feedbackMode = feedbackMode
         self.namingStyle = namingStyle
         self.referenceTimbre = referenceTimbre
+        self.detectionProfile = DetectionProfile.profile(for: preset.acousticFamily)
         wantsListening = true
         resumeAfterLifecycle = true
         isPaused = false
@@ -585,14 +590,19 @@ final class TunerViewModel: ObservableObject {
         let now = Date()
         updateNoiseFloor(rms: estimate.rms)
 
-        let adaptiveMinimumRMS = min(0.02, max(0.0025, noiseFloorRMS * 2.5))
+        let adaptiveMinimumRMS = min(
+            0.02,
+            max(0.0025, noiseFloorRMS * detectionProfile.noiseFloorMultiplier)
+        )
         // High piano notes decay fast and carry little energy. Requiring the
         // same level as bass notes made C7 and above look silent.
         let highNoteRelief = (estimate.frequency ?? 0) >= 1_500
         let requiredRMS = highNoteRelief
             ? max(0.0012, adaptiveMinimumRMS * 0.45)
             : adaptiveMinimumRMS
-        let requiredConfidence = highNoteRelief ? 0.5 : 0.62
+        let requiredConfidence = highNoteRelief
+            ? max(0.45, detectionProfile.minimumConfidence - 0.08)
+            : detectionProfile.minimumConfidence
         let reliable = estimate.frequency != nil
             && estimate.confidence >= requiredConfidence
             && estimate.rms >= requiredRMS
@@ -661,7 +671,8 @@ final class TunerViewModel: ObservableObject {
         // partial; reporting "multiple notes" there would be wrong, so wait
         // for a steadier reading instead.
         let spread = recent.last! - recent.first!
-        let isSteady = medianFrequency > 0 && spread / medianFrequency < 0.03
+        let isSteady = medianFrequency > 0
+            && spread / medianFrequency < detectionProfile.maximumRelativeSpread
 
         let multiplePitchResult = MultiplePitchDetector.detect(
             samples: samples,
@@ -669,7 +680,8 @@ final class TunerViewModel: ObservableObject {
             primaryFrequency: medianFrequency,
             primaryConfidence: estimate.confidence,
             rms: estimate.rms,
-            isPitchSteady: isSteady
+            isPitchSteady: isSteady,
+            profile: detectionProfile
         )
         if multiplePitchResult.isMultiplePitches {
             if !isShowingMultiplePitchWarning {
