@@ -270,8 +270,10 @@ final class AppModel: ObservableObject {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        let presetID = defaults.string(forKey: Keys.presetID) ?? PresetCatalog.guitar.id
-        let preset = PresetCatalog.preset(withID: presetID) ?? PresetCatalog.guitar
+        // Piano is the first entry in the picker and the most common use for a
+        // new user; existing installs keep whatever they already chose.
+        let presetID = defaults.string(forKey: Keys.presetID) ?? PresetCatalog.piano.id
+        let preset = PresetCatalog.preset(withID: presetID) ?? PresetCatalog.piano
         self.selectedPresetID = preset.id
         self.selectedStringID = defaults.string(forKey: Keys.stringID) ?? preset.strings.first?.id
         self.pianoTargetMIDI = defaults.object(forKey: Keys.pianoTargetMIDI) as? Int ?? 69
@@ -310,7 +312,7 @@ final class AppModel: ObservableObject {
     }
 
     var selectedPreset: InstrumentPreset {
-        PresetCatalog.preset(withID: selectedPresetID) ?? PresetCatalog.guitar
+        PresetCatalog.preset(withID: selectedPresetID) ?? PresetCatalog.piano
     }
 
     var selectedString: TuningString? {

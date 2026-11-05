@@ -85,7 +85,7 @@ public struct InstrumentPreset: Identifiable, Hashable, Sendable {
 public enum PresetCatalog {
     public static let chromatic = InstrumentPreset(
         id: "chromatic",
-        displayName: "半音模式",
+        displayName: "任意音高",
         kind: .chromatic,
         strings: [],
         defaultMode: .automatic
@@ -201,8 +201,11 @@ public enum PresetCatalog {
         defaultMode: .automatic
     )
 
+    /// Display order for the picker. Piano comes first because it is the most
+    /// common use, and the free-pitch mode is last because it is a fallback for
+    /// instruments that are not in this list.
     public static let all: [InstrumentPreset] = [
-        chromatic,
+        piano,
         guitar,
         ukulele,
         violin,
@@ -210,7 +213,7 @@ public enum PresetCatalog {
         erhu,
         guzheng,
         pipa,
-        piano
+        chromatic
     ]
 
     public static func preset(withID id: String) -> InstrumentPreset? {
