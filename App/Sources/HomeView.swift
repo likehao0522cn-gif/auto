@@ -63,10 +63,10 @@ struct HomeView: View {
             }
 
             Section("版本") {
-                Text(verbatim: "0.6.10 常用速度与乐器优化 2026-11-06")
+                Text(verbatim: "0.6.11 高低音检测与交互修复 2026-11-06")
                     .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(Text(verbatim: "0.6.10 常用速度与乐器优化，构建日期 2026 年 11 月 6 日"))
-                    .accessibilityIdentifier("FAVORITES_PROFILE_2026_11_06")
+                    .accessibilityLabel(Text(verbatim: "0.6.11 高低音检测与交互修复，构建日期 2026 年 11 月 6 日"))
+                    .accessibilityIdentifier("NOTE_BOUNDARY_2026_11_06")
             }
 
             Section("当前乐器") {
