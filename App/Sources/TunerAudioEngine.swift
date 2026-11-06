@@ -67,7 +67,10 @@ final class TunerAudioEngine {
             throw TunerAudioEngineError.noInputAvailable
         }
 
-        inputNode.installTap(onBus: 0, bufferSize: 8_192, format: format) { [weak self] buffer, _ in
+        // 8192 samples gave a low G1 string only about 9 periods, which made
+        // the pitch estimate drift and look like multiple notes. 16384 doubles
+        // that at the cost of ~370 ms per frame, which is fine for tuning.
+        inputNode.installTap(onBus: 0, bufferSize: 16_384, format: format) { [weak self] buffer, _ in
             guard let self, let samples = Self.monoSamples(from: buffer) else { return }
             let sampleRate = buffer.format.sampleRate
             self.analysisQueue.async { [weak self] in

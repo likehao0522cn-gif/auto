@@ -41,7 +41,12 @@ public enum MultiplePitchDetector {
             )
         }
 
-        let analysisSamples = Array(samples.prefix(4_096))
+        // A low fundamental needs a longer analysis window to separate its
+        // partials. 4096 samples covered only ~4 cycles at 45 Hz, which made
+        // ordinary harmonics look like independent peaks.
+        let requiredSamples = Int((sampleRate / max(primaryFrequency, 1)) * 12)
+        let analysisCount = min(samples.count, max(4_096, requiredSamples))
+        let analysisSamples = Array(samples.prefix(analysisCount))
         let fundamentalMagnitude = amplitude(
             samples: analysisSamples,
             sampleRate: sampleRate,
@@ -60,10 +65,14 @@ public enum MultiplePitchDetector {
         // within a few octaves; scanning to 2 kHz let distant partials win.
         let lowerBound = max(55.0, primaryFrequency * 0.5)
         let upperBound = min(2_000.0, primaryFrequency * 4.0)
+        // A fixed 10 Hz grid is too coarse for bass notes: at 55 Hz it is a
+        // 6% step, which quantises a real B1 onto a G1 harmonic. Scale the step
+        // with the fundamental so low notes get the resolution they need.
+        let step = max(2.0, min(10.0, primaryFrequency * 0.02))
         let candidateFrequencies: [Double] = stride(
             from: lowerBound,
             through: max(lowerBound, upperBound),
-            by: 10.0
+            by: step
         ).map { $0 }
         let independentCandidates: [Double] = candidateFrequencies.filter { (candidate: Double) -> Bool in
             let harmonicRatio = candidate / primaryFrequency
@@ -91,8 +100,8 @@ public enum MultiplePitchDetector {
         let peaks = independentCandidates
             .filter { candidate -> Bool in
                 let value = amplitude(samples: analysisSamples, sampleRate: sampleRate, frequency: candidate)
-                let lower = amplitude(samples: analysisSamples, sampleRate: sampleRate, frequency: candidate - 10)
-                let upper = amplitude(samples: analysisSamples, sampleRate: sampleRate, frequency: candidate + 10)
+                let lower = amplitude(samples: analysisSamples, sampleRate: sampleRate, frequency: candidate - step)
+                let upper = amplitude(samples: analysisSamples, sampleRate: sampleRate, frequency: candidate + step)
                 return value > lower && value > upper
             }
             .map { frequency in
@@ -105,11 +114,35 @@ public enum MultiplePitchDetector {
         // genuine simultaneous notes exceed 45%. 30% sits safely between.
         // The family profile sets the base bar; very low notes get an extra
         // margin because their partials are densely packed.
+        // Low strings leak a lot of energy between harmonics; require a much
+        // stronger competing peak there before calling it a second note.
         let baseRatio = profile.multiPitchRatio
-        let requiredRatio = primaryFrequency < 120
-            ? min(0.75, baseRatio + 0.20)
-            : baseRatio
-        guard let secondStrongest,
+        let requiredRatio: Double
+        if primaryFrequency < 90 {
+            requiredRatio = min(0.85, baseRatio + 0.35)
+        } else if primaryFrequency < 120 {
+            requiredRatio = min(0.80, baseRatio + 0.25)
+        } else if primaryFrequency < 200 {
+            requiredRatio = min(0.70, baseRatio + 0.12)
+        } else {
+            requiredRatio = baseRatio
+        }
+        // A single stray partial has no harmonic series of its own. A real
+        // second note does, so require the candidate to be supported by its own
+        // second partial before reporting two notes.
+        let supportedCandidate = peaks.first { candidate in
+            candidate.1 > fundamentalMagnitude * requiredRatio
+                && candidate.1 > 0.02
+                && hasHarmonicSupport(
+                    samples: analysisSamples,
+                    sampleRate: sampleRate,
+                    frequency: candidate.0,
+                    magnitude: candidate.1
+                )
+        }
+
+        guard supportedCandidate != nil,
+              let secondStrongest = supportedCandidate,
               secondStrongest.1 > fundamentalMagnitude * requiredRatio,
               secondStrongest.1 > 0.02 else {
             return MultiplePitchEstimate(
@@ -124,6 +157,33 @@ public enum MultiplePitchDetector {
             strongestFrequency: primaryFrequency,
             strongestConfidence: primaryConfidence
         )
+    }
+
+    /// Whether a peak is the fundamental of a distinct note rather than a lone
+    /// partial. Checked by looking for the peak's own second or third partial.
+    private static func hasHarmonicSupport(
+        samples: [Float],
+        sampleRate: Double,
+        frequency: Double,
+        magnitude: Double
+    ) -> Bool {
+        for multiple in [2.0, 3.0] {
+            let target = frequency * multiple
+            guard target < sampleRate / 2 else { break }
+            var best = 0.0
+            // Allow for stretched tuning by scanning a small ratio band.
+            for offset in stride(from: -0.03, through: 0.03, by: 0.01) {
+                best = max(best, amplitude(
+                    samples: samples,
+                    sampleRate: sampleRate,
+                    frequency: target * (1 + offset)
+                ))
+            }
+            if best >= magnitude * 0.25 {
+                return true
+            }
+        }
+        return false
     }
 
     private static func amplitude(
