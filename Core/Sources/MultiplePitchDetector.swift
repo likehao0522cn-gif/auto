@@ -70,12 +70,18 @@ public enum MultiplePitchDetector {
             if harmonicRatio >= 0.95 && harmonicRatio <= 1.05 {
                 return false
             }
-            // Sub-harmonics matter as much as harmonics. A weak fundamental
-            // makes YIN lock onto a partial, and the true fundamental then
-            // appears as a 1/2 or 1/3 ratio; without this it was counted as an
-            // independent note, which is what flagged single low notes.
-            if harmonicRatio <= 0.75 {
-                return false
+            // Exclude true sub-harmonics (about 1/2 or 1/3). A blanket
+            // "<= 0.75" filter also removed a real lower note whenever YIN
+            // happened to lock onto the higher of two notes, which is exactly
+            // the two-note case the app is supposed to report.
+            if harmonicRatio < 0.85 {
+                let nearestSub = 0.5
+                if abs(harmonicRatio - 1.0 / 3.0) < abs(harmonicRatio - 0.5) {
+                    nearestSub = 1.0 / 3.0
+                }
+                if abs(harmonicRatio - nearestSub) < 0.08 {
+                    return false
+                }
             }
             let nearestHarmonic = (1...8).map { Double($0) }.min {
                 abs(harmonicRatio - $0) < abs(harmonicRatio - $1)

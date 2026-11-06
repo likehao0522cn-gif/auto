@@ -44,7 +44,10 @@ public struct PitchDetector: Sendable {
 
         let centered = centeredSamples(samples)
         let rms = rootMeanSquare(centered)
-        guard rms >= 0.0005 else {
+        // 0.0005 was low enough that room noise passed as signal; YIN then
+        // reported a random low "pitch" instead of nothing, which users hear
+        // as a note they never played.
+        guard rms >= 0.002 else {
             return PitchEstimate(frequency: nil, confidence: 0, rms: rms)
         }
 
@@ -109,11 +112,25 @@ public struct PitchDetector: Sendable {
             return PitchEstimate(frequency: nil, confidence: 0, rms: rms)
         }
 
-        let y0 = normalized[tau - 1]
-        let y1 = normalized[tau]
-        let y2 = normalized[tau + 1]
+        // YIN frequently locks one octave low when noise or a strong second
+        // partial shifts the first dip. If a shorter lag has a nearly as deep
+        // minimum, prefer it; this is the single biggest fix for high notes.
+        var correctedTau = tau
+        for divisor in [2, 3] {
+            let shorter = Int((Double(tau) / Double(divisor)).rounded())
+            guard shorter >= tauMin, shorter < tauMax else { continue }
+            let shorterValue = min(normalized[shorter], normalized[shorter + 1])
+            if shorterValue <= normalized[tau] * 1.6, shorterValue < 0.35 {
+                correctedTau = shorter
+                break
+            }
+        }
+
+        let y0 = normalized[correctedTau - 1]
+        let y1 = normalized[correctedTau]
+        let y2 = normalized[correctedTau + 1]
         let denominator = 2 * (y0 - 2 * y1 + y2)
-        var refinedTau = Double(tau)
+        var refinedTau = Double(correctedTau)
         if abs(denominator) > 1e-12 {
             let offset = (y0 - y2) / denominator
             refinedTau += max(-1, min(1, offset))
@@ -129,9 +146,20 @@ public struct PitchDetector: Sendable {
             return PitchEstimate(frequency: nil, confidence: 0, rms: rms)
         }
 
+        // Very weak signals produce plausible-looking octave errors. Reporting
+        // nothing is better than naming a note the user never played, so a low
+        // level must be paired with a very confident match.
+        let confidence = max(0, min(1, 1 - y1))
+        if rms < 0.003 {
+            return PitchEstimate(frequency: nil, confidence: confidence, rms: rms)
+        }
+        if rms < 0.006 && confidence < 0.90 {
+            return PitchEstimate(frequency: nil, confidence: confidence, rms: rms)
+        }
+
         return PitchEstimate(
             frequency: frequency,
-            confidence: max(0, min(1, 1 - y1)),
+            confidence: confidence,
             rms: rms
         )
     }

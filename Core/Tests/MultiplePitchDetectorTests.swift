@@ -104,6 +104,71 @@ final class MultiplePitchDetectorTests: XCTestCase {
         XCTAssertFalse(result.isMultiplePitches)
     }
 
+    func testTwoNotesAreDetectedWhenPrimaryLocksOnHigherNote() {
+        // YIN often lands on the louder of two notes. The lower note then sits
+        // at a ratio below 0.85; the old blanket filter discarded it and the
+        // app missed real two-note playing.
+        var samples = [Float](repeating: 0, count: 4_096)
+        for index in 0..<samples.count {
+            let time = Double(index) / sampleRate
+            let low: Double = sin(2 * Double.pi * 261.63 * time) * 0.30
+            let high: Double = sin(2 * Double.pi * 329.63 * time) * 0.30
+            samples[index] = Float(low + high)
+        }
+
+        let result = MultiplePitchDetector.detect(
+            samples: samples,
+            sampleRate: sampleRate,
+            primaryFrequency: 329.63,
+            primaryConfidence: 0.9,
+            rms: 0.3
+        )
+
+        XCTAssertTrue(result.isMultiplePitches)
+    }
+
+    func testLowTwoNotesAreDetected() {
+        var samples = [Float](repeating: 0, count: 4_096)
+        for index in 0..<samples.count {
+            let time = Double(index) / sampleRate
+            let a: Double = sin(2 * Double.pi * 82.41 * time) * 0.3
+            let b: Double = sin(2 * Double.pi * 123.47 * time) * 0.3
+            samples[index] = Float(a + b)
+        }
+
+        let result = MultiplePitchDetector.detect(
+            samples: samples,
+            sampleRate: sampleRate,
+            primaryFrequency: 82.41,
+            primaryConfidence: 0.9,
+            rms: 0.3
+        )
+
+        XCTAssertTrue(result.isMultiplePitches)
+    }
+
+    func testSubHarmonicOfPrimaryIsStillIgnored() {
+        // A true sub-harmonic at half the reported pitch is a detector artefact,
+        // not a second note.
+        var samples = [Float](repeating: 0, count: 4_096)
+        for index in 0..<samples.count {
+            let time = Double(index) / sampleRate
+            let a: Double = sin(2 * Double.pi * 440 * time) * 0.30
+            let b: Double = sin(2 * Double.pi * 220 * time) * 0.28
+            samples[index] = Float(a + b)
+        }
+
+        let result = MultiplePitchDetector.detect(
+            samples: samples,
+            sampleRate: sampleRate,
+            primaryFrequency: 440,
+            primaryConfidence: 0.9,
+            rms: 0.3
+        )
+
+        XCTAssertFalse(result.isMultiplePitches)
+    }
+
     func testLowConfidenceIsNotReportedAsMultiplePitches() {
         let result = MultiplePitchDetector.detect(
             samples: sine(440),
