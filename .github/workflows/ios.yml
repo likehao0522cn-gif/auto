@@ -10,7 +10,9 @@ on:
 
 jobs:
   build-and-test:
-    runs-on: macos-14
+    # macos-14 now resolves to an unsupported arm64 pool on this repo; macos-15
+    # is the current supported image with Xcode 16.
+    runs-on: macos-15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
