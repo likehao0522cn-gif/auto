@@ -127,12 +127,20 @@ public enum MultiplePitchDetector {
         } else {
             requiredRatio = baseRatio
         }
-        // A single stray partial has no harmonic series of its own. A real
-        // second note does, so require the candidate to be supported by its own
-        // second partial before reporting two notes.
+        // Two checks decide "two notes":
+        // 1. the peak is strong relative to the fundamental, or
+        // 2. it is weaker but carries its own harmonic series.
+        //
+        // The harmonic check alone would reject genuine pure tones (a tuning
+        // fork, an electronic keyboard), which have no upper partials at all.
+        let strongThreshold = fundamentalMagnitude * requiredRatio
         let supportedCandidate = peaks.first { candidate in
-            candidate.1 > fundamentalMagnitude * requiredRatio
-                && candidate.1 > 0.02
+            guard candidate.1 > 0.02 else { return false }
+            if candidate.1 > strongThreshold {
+                return true
+            }
+            // Weaker peaks must prove they are a real note, not a stray partial.
+            return candidate.1 > fundamentalMagnitude * max(0.20, requiredRatio * 0.5)
                 && hasHarmonicSupport(
                     samples: analysisSamples,
                     sampleRate: sampleRate,
