@@ -285,6 +285,13 @@ struct TunerView: View {
         }
     }
 
+    /// "继续聆听" only makes sense after a first start; before that the user is
+    /// starting, not resuming.
+    private var listenButtonTitle: String {
+        if !viewModel.isPaused { return "暂停聆听" }
+        return viewModel.hasStartedListening ? "继续聆听" : "开始聆听"
+    }
+
     private var resultCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(verbatim: "当前结果")
@@ -351,11 +358,11 @@ struct TunerView: View {
                     viewModel.pause()
                 }
             } label: {
-                Text(verbatim: viewModel.isPaused ? "继续聆听" : "暂停聆听")
+                Text(verbatim: listenButtonTitle)
                     .frame(maxWidth: .infinity, minHeight: 44)
             }
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel(Text(verbatim: viewModel.isPaused ? "继续聆听" : "暂停聆听"))
+            .accessibilityLabel(Text(verbatim: listenButtonTitle))
             .buttonStyle(.borderedProminent)
 
             Button {

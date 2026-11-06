@@ -59,8 +59,20 @@ struct FavoriteTempoListView: View {
                 }
 
                 Section("添加") {
+                    // Adding the current tempo must not open a keyboard: the
+                    // value is already known, so a text field here was confusing.
                     Button {
-                        newTempoInput = "\(Int(metronome.configuration.bpm))"
+                        addCurrentTempo()
+                    } label: {
+                        Text(verbatim: "把当前速度 \(Int(metronome.configuration.bpm)) 加入常用")
+                    }
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(Text(verbatim: "把当前速度加入常用"))
+                    .accessibilityValue(Text(verbatim: "当前是 \(Int(metronome.configuration.bpm)) BPM"))
+                    .accessibilityHint(Text(verbatim: "双击直接加入，不需要输入"))
+
+                    Button {
+                        newTempoInput = ""
                         addError = nil
                         isShowingAddInput = true
                         Task { @MainActor in
@@ -68,11 +80,10 @@ struct FavoriteTempoListView: View {
                             isAddFieldFocused = true
                         }
                     } label: {
-                        Text(verbatim: "把当前速度加入常用")
+                        Text(verbatim: "输入其他速度添加")
                     }
                     .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(Text(verbatim: "把当前速度加入常用"))
-                    .accessibilityHint(Text(verbatim: "当前是 \(Int(metronome.configuration.bpm)) BPM"))
+                    .accessibilityLabel(Text(verbatim: "输入其他速度添加"))
 
                     if isShowingAddInput {
                         TextField("输入 20 到 300", text: $newTempoInput)
@@ -108,16 +119,26 @@ struct FavoriteTempoListView: View {
                     }
                     .accessibilityLabel(Text(verbatim: "关闭常用速度"))
                 }
-                ToolbarItemGroup(placement: .keyboard) {
+            }
+        }
+        // Right-aligned confirm bar directly above the number pad.
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if isShowingAddInput, isAddFieldFocused {
+                HStack {
                     Spacer()
                     Button {
                         addTypedTempo()
                     } label: {
                         Text(verbatim: "确定")
                             .fontWeight(.semibold)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
                     }
                     .accessibilityLabel(Text(verbatim: "确定并添加"))
                 }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(.bar)
             }
         }
         .presentationDetents([.medium, .large])
@@ -131,6 +152,22 @@ struct FavoriteTempoListView: View {
             parts.append("累计播放 \(tempo.playMinutes) 分钟")
         }
         return parts.joined(separator: "，")
+    }
+
+    /// Adds the tempo currently in use. No input is needed, so no keyboard is
+    /// shown and the user gets immediate spoken feedback.
+    private func addCurrentTempo() {
+        let bpm = Int(metronome.configuration.bpm)
+        if store.contains(bpm: bpm) {
+            announce("\(bpm) 已经在常用里")
+        } else if store.add(bpm: bpm) {
+            announce("已加入常用速度 \(bpm)")
+            addError = nil
+        } else {
+            let message = "常用速度最多 \(FavoriteTempoRules.capacity) 个，请先删除一个。"
+            addError = message
+            announce(message)
+        }
     }
 
     private func addTypedTempo() {

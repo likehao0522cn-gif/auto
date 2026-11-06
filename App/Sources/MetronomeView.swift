@@ -37,6 +37,27 @@ struct MetronomeView: View {
                 .padding(.bottom, 32)
         }
         .navigationTitle("节拍器")
+        // A right-aligned confirm bar sits directly above the number pad,
+        // matching how the system keyboard places "完成".
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if isShowingBPMInput, isBPMInputFocused {
+                HStack {
+                    Spacer()
+                    Button {
+                        applyManualBPMInput()
+                    } label: {
+                        Text(verbatim: "确定")
+                            .fontWeight(.semibold)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                    }
+                    .accessibilityLabel(Text(verbatim: "确定并应用速度"))
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(.bar)
+            }
+        }
         .sheet(isPresented: $isShowingFavorites) {
             FavoriteTempoListView()
         }
@@ -51,16 +72,6 @@ struct MetronomeView: View {
                 .accessibilityHint(Text(verbatim: "包含拍号、重音、细分拍、音色、触觉、测速提示和帮助"))
             }
 
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button {
-                    applyManualBPMInput()
-                } label: {
-                    Text(verbatim: "确定")
-                        .fontWeight(.semibold)
-                }
-                .accessibilityLabel(Text(verbatim: "确定并应用速度"))
-            }
         }
     }
 

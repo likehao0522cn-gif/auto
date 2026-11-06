@@ -73,6 +73,9 @@ final class TunerViewModel: ObservableObject {
     @Published private(set) var statusText: String = "准备聆听"
     @Published private(set) var isListening: Bool = false
     @Published private(set) var isPaused: Bool = false
+    /// True once listening has started at least once. Drives whether the button
+    /// reads "开始聆听" or "继续聆听"; "continue" makes no sense before a first start.
+    @Published private(set) var hasStartedListening: Bool = false
     @Published private(set) var errorMessage: String?
     @Published private(set) var needsMicrophonePermission = false
 
@@ -260,7 +263,9 @@ final class TunerViewModel: ObservableObject {
         resumeAfterLifecycle = false
         errorMessage = nil
         needsMicrophonePermission = false
-        statusText = "已暂停，点继续聆听开始"
+        statusText = hasStartedListening
+            ? "已暂停，点继续聆听开始"
+            : "已停止，点开始聆听"
     }
 
     func stop() {
@@ -284,6 +289,7 @@ final class TunerViewModel: ObservableObject {
         isListening = false
         isPaused = true
         wantsListening = false
+        // Pausing is a user action, so this text is always correct.
         statusText = "已暂停聆听"
         speak("已暂停聆听")
     }
@@ -309,7 +315,7 @@ final class TunerViewModel: ObservableObject {
             return
         }
         beginListening(announceEntry: false)
-        speak("继续聆听")
+        speak(hasStartedListening ? "继续聆听" : "开始聆听")
     }
 
     func retryMicrophonePermission() {
@@ -411,7 +417,7 @@ final class TunerViewModel: ObservableObject {
 
     func playReferenceTone() {
         guard isListening else {
-            speak("请先继续聆听")
+            speak(hasStartedListening ? "请先继续聆听" : "请先开始聆听")
             return
         }
         let targetMIDI = reading?.targetMIDI ?? targetString?.midi ?? 69
@@ -468,6 +474,7 @@ final class TunerViewModel: ObservableObject {
             }
             isListening = true
             isPaused = false
+            hasStartedListening = true
             errorMessage = nil
             needsMicrophonePermission = false
             statusText = "正在聆听"
