@@ -139,17 +139,13 @@ public struct PitchDetector: Sendable {
         var refinedTau = Double(correctedTau)
         if abs(differenceDenominator) > 1e-12 {
             let offset = (d0 - d2) / differenceDenominator
-            refinedTau += max(-1, min(1, offset))
-        } else {
-            let y0 = normalized[correctedTau - 1]
-            let y1 = normalized[correctedTau]
-            let y2 = normalized[correctedTau + 1]
-            let denominator = 2 * (y0 - 2 * y1 + y2)
-            if abs(denominator) > 1e-12 {
-                let offset = (y0 - y2) / denominator
-                refinedTau += max(-1, min(1, offset))
-            }
+            refinedTau += max(-1.0, min(1.0, offset))
         }
+
+        // Confidence uses the normalized minimum at the chosen lag, which is
+        // meaningful for both the difference and the fallback path.
+        let normalizedMinimum = normalized[correctedTau]
+        var confidence = max(0.0, min(1.0, 1.0 - normalizedMinimum))
 
         guard refinedTau > 0 else {
             return PitchEstimate(frequency: nil, confidence: 0, rms: rms)
@@ -165,7 +161,6 @@ public struct PitchDetector: Sendable {
         // Very weak signals produce plausible-looking octave errors. Reporting
         // nothing is better than naming a note the user never played, so a low
         // level must be paired with a very confident match.
-        let confidence = max(0, min(1, 1 - y1))
         if rms < 0.003 {
             return PitchEstimate(frequency: nil, confidence: confidence, rms: rms)
         }
