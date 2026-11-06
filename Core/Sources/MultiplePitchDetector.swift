@@ -75,7 +75,7 @@ public enum MultiplePitchDetector {
             // happened to lock onto the higher of two notes, which is exactly
             // the two-note case the app is supposed to report.
             if harmonicRatio < 0.85 {
-                let nearestSub = 0.5
+                var nearestSub = 0.5
                 if abs(harmonicRatio - 1.0 / 3.0) < abs(harmonicRatio - 0.5) {
                     nearestSub = 1.0 / 3.0
                 }
