@@ -145,7 +145,9 @@ struct MetronomeView: View {
             // Full-width so the three actions never crowd each other on a
             // narrow screen, which matters for users who tap by touch.
             Button {
-                bpmInput = "\(Int(metronome.configuration.bpm))"
+                // Start empty: prefilling the current BPM forced users to
+                // delete it before typing a new value.
+                bpmInput = ""
                 bpmInputError = nil
                 if !isShowingBPMInput {
                     withAnimation {
