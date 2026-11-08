@@ -39,18 +39,34 @@ struct MetronomeView: View {
         .navigationTitle("节拍器")
         // A right-aligned confirm bar sits directly above the number pad,
         // matching how the system keyboard places "完成".
+        // Message-composer style: the text field and its confirm button share
+        // one row pinned directly above the keyboard, so "确定" sits where the
+        // send button is in a chat app.
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if isShowingBPMInput, isBPMInputFocused {
-                HStack {
-                    Spacer()
+                HStack(spacing: 10) {
+                    TextField("输入 20 到 300", text: $bpmInput)
+                        .keyboardType(.numberPad)
+                        .textFieldStyle(.roundedBorder)
+                        .focused($isBPMInputFocused)
+                        .submitLabel(.done)
+                        .onSubmit { applyManualBPMInput() }
+                        .accessibilityLabel(Text(verbatim: "手动输入速度"))
+                        .accessibilityHint(Text(verbatim: "请输入 20 到 300 的整数 BPM，然后点确定"))
+                        .onChange(of: bpmInput) { _, _ in
+                            bpmInputError = nil
+                        }
+
                     Button {
                         applyManualBPMInput()
                     } label: {
                         Text(verbatim: "确定")
                             .fontWeight(.semibold)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
+                            .frame(minWidth: 56, minHeight: 36)
+                            .padding(.horizontal, 6)
                     }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
                     .accessibilityLabel(Text(verbatim: "确定并应用速度"))
                 }
                 .padding(.horizontal, 16)
@@ -169,29 +185,10 @@ struct MetronomeView: View {
         .frame(maxWidth: .infinity, minHeight: 58)
     }
 
+    /// Only shows validation feedback. The field and its confirm button live in
+    /// the keyboard bar so they sit together like a message composer.
     private var manualBPMInput: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            TextField("输入 20 到 300", text: $bpmInput)
-                .keyboardType(.numberPad)
-                .textFieldStyle(.roundedBorder)
-                .focused($isBPMInputFocused)
-                .accessibilityLabel(Text(verbatim: "手动输入速度"))
-                .accessibilityHint(Text(verbatim: "请输入 20 到 300 的整数 BPM，然后点应用输入的速度"))
-                .onChange(of: bpmInput) { _, _ in
-                    bpmInputError = nil
-                }
-
-            Button {
-                applyManualBPMInput()
-            } label: {
-                Text(verbatim: "应用输入的速度")
-                    .frame(maxWidth: .infinity, minHeight: 44)
-            }
-            .buttonStyle(.bordered)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(Text(verbatim: "应用输入的速度"))
-            .accessibilityHint(Text(verbatim: "将输入框中 20 到 300 的整数 BPM 应用到节拍器"))
-
+        Group {
             if let bpmInputError {
                 Text(verbatim: bpmInputError)
                     .font(.footnote)

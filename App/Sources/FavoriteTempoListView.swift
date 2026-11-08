@@ -85,26 +85,10 @@ struct FavoriteTempoListView: View {
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(Text(verbatim: "输入其他速度添加"))
 
-                    if isShowingAddInput {
-                        TextField("输入 20 到 300", text: $newTempoInput)
-                            .keyboardType(.numberPad)
-                            .textFieldStyle(.roundedBorder)
-                            .focused($isAddFieldFocused)
-                            .accessibilityLabel(Text(verbatim: "输入要添加的速度"))
-
-                        Button {
-                            addTypedTempo()
-                        } label: {
-                            Text(verbatim: "添加")
-                        }
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityLabel(Text(verbatim: "添加输入的速度"))
-
-                        if let addError {
-                            Text(verbatim: addError)
-                                .font(.footnote)
-                                .foregroundStyle(.red)
-                        }
+                    if let addError {
+                        Text(verbatim: addError)
+                            .font(.footnote)
+                            .foregroundStyle(.red)
                     }
                 }
             }
@@ -121,19 +105,29 @@ struct FavoriteTempoListView: View {
                 }
             }
         }
-        // Right-aligned confirm bar directly above the number pad.
+        // Message-composer style: field and confirm share one row above the
+        // keyboard, matching where a chat app puts its send button.
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if isShowingAddInput, isAddFieldFocused {
-                HStack {
-                    Spacer()
+                HStack(spacing: 10) {
+                    TextField("输入 20 到 300", text: $newTempoInput)
+                        .keyboardType(.numberPad)
+                        .textFieldStyle(.roundedBorder)
+                        .focused($isAddFieldFocused)
+                        .submitLabel(.done)
+                        .onSubmit { addTypedTempo() }
+                        .accessibilityLabel(Text(verbatim: "输入要添加的速度"))
+
                     Button {
                         addTypedTempo()
                     } label: {
                         Text(verbatim: "确定")
                             .fontWeight(.semibold)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
+                            .frame(minWidth: 56, minHeight: 36)
+                            .padding(.horizontal, 6)
                     }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
                     .accessibilityLabel(Text(verbatim: "确定并添加"))
                 }
                 .padding(.horizontal, 16)
@@ -141,7 +135,9 @@ struct FavoriteTempoListView: View {
                 .background(.bar)
             }
         }
-        .presentationDetents([.medium, .large])
+        // Full height: the list plus the add controls did not fit in a
+        // medium sheet, which made the screen feel cramped and half-empty.
+        .presentationDetents([.large])
     }
 
     private func describe(_ tempo: FavoriteTempo) -> String {
