@@ -97,16 +97,19 @@ public enum MultiplePitchDetector {
             } ?? 2
             return abs(harmonicRatio - nearestHarmonic) > 0.10
         }
-        let peaks = independentCandidates
-            .filter { candidate -> Bool in
-                let value = amplitude(samples: analysisSamples, sampleRate: sampleRate, frequency: candidate)
-                let lower = amplitude(samples: analysisSamples, sampleRate: sampleRate, frequency: candidate - step)
-                let upper = amplitude(samples: analysisSamples, sampleRate: sampleRate, frequency: candidate + step)
-                return value > lower && value > upper
-            }
-            .map { frequency in
-                (frequency, amplitude(samples: analysisSamples, sampleRate: sampleRate, frequency: frequency))
-            }
+        // Compute each candidate's magnitude once. The previous version called
+        // `amplitude` three extra times per point (for the neighbours) and again
+        // for the map, which made detection take seconds once the grid became
+        // adaptive and produced ~10x more candidates.
+        let magnitudes = independentCandidates.map { candidate in
+            amplitude(samples: analysisSamples, sampleRate: sampleRate, frequency: candidate)
+        }
+        let peaks: [(Double, Double)] = independentCandidates.indices.compactMap { index in
+            guard index > 0, index < independentCandidates.count - 1 else { return nil }
+            let value = magnitudes[index]
+            guard value > magnitudes[index - 1], value > magnitudes[index + 1] else { return nil }
+            return (independentCandidates[index], value)
+        }
         let secondStrongest = peaks.max { $0.1 < $1.1 }
 
         // Measured on synthetic piano/guitar-like signals: one struck note
@@ -134,7 +137,10 @@ public enum MultiplePitchDetector {
         // The harmonic check alone would reject genuine pure tones (a tuning
         // fork, an electronic keyboard), which have no upper partials at all.
         let strongThreshold = fundamentalMagnitude * requiredRatio
-        let supportedCandidate = peaks.first { candidate in
+        // Only the strongest few peaks can plausibly be a second note; checking
+        // every peak with a harmonic scan was the other hot spot.
+        let topPeaks = peaks.sorted { $0.1 > $1.1 }.prefix(3)
+        let supportedCandidate = topPeaks.first { candidate in
             guard candidate.1 > 0.02 else { return false }
             if candidate.1 > strongThreshold {
                 return true
