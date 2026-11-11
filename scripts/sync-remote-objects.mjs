@@ -61,8 +61,11 @@ async function writeTree(sha) {
 
 const refData = await api(`/repos/${repo}/git/ref/${ref}`);
 const commitSha = refData.object.sha;
-if (!hasObject(commitSha)) {
-  const commit = await api(`/repos/${repo}/git/commits/${commitSha}`);
-  await writeTree(commit.tree.sha);
-}
+
+// Always make sure the commit's tree is complete. The commit object itself may
+// already exist locally (it was rebuilt by hand after an API push) while its
+// tree objects were never written, which is exactly the state that makes
+// "git status" fail with "bad tree object HEAD".
+const commit = await api(`/repos/${repo}/git/commits/${commitSha}`);
+await writeTree(commit.tree.sha);
 console.log("synced", commitSha);
