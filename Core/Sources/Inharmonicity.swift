@@ -144,6 +144,50 @@ public enum Inharmonicity {
         )
     }
 
+    /// Measures B for one string from recorded audio.
+    ///
+    /// This is the entry point the tuner uses: it finds the partials first,
+    /// then folds them into the same estimator the rest of the code uses. The
+    /// confidence combines the estimator's own agreement score with how strong
+    /// the upper partials were compared with the fundamental, because a string
+    /// whose upper partials are barely above the noise floor cannot give a
+    /// trustworthy coefficient.
+    public static func measure(
+        midi: Int,
+        samples: [Float],
+        sampleRate: Double,
+        expectedF1: Double,
+        initialB: Double = 0
+    ) -> InharmonicityMeasurement? {
+        let analyzed = PartialAnalyzer.measure(
+            samples: samples,
+            sampleRate: sampleRate,
+            expectedF1: expectedF1,
+            initialB: initialB
+        )
+        guard analyzed.partials.count >= 3 else { return nil }
+        guard let estimate = estimate(midi: midi, partials: analyzed.partials) else { return nil }
+
+        // Strength of the upper partials relative to the fundamental. A very
+        // weak second partial makes B unreliable even when the numbers look
+        // self-consistent, so it pulls the confidence down.
+        let fundamentalStrength = analyzed.strengths.first ?? 0
+        let upperStrengths = analyzed.strengths.dropFirst()
+        let strengthRatio: Double
+        if fundamentalStrength > 0, let maxUpper = upperStrengths.max() {
+            strengthRatio = min(1.0, maxUpper / fundamentalStrength)
+        } else {
+            strengthRatio = 0
+        }
+        let confidence = min(1.0, estimate.confidence * (0.5 + 0.5 * strengthRatio))
+        return InharmonicityMeasurement(
+            midi: midi,
+            b: estimate.b,
+            confidence: confidence,
+            partials: analyzed.partials
+        )
+    }
+
     /// (max - min) / mean, for a set of positive values. Zero means perfect
     /// agreement.
     private static func relativeSpread(_ values: [Double]) -> Double {
