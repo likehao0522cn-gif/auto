@@ -165,6 +165,80 @@ final class MetronomeTimingTests: XCTestCase {
         estimator.record(at: 0.4)
         XCTAssertGreaterThan(estimator.bpm ?? 0, 300)
     }
+    // MARK: - Robust tap tempo
+
+    func testTapTempoIgnoresPauseBetweenGroups() {
+        // Four taps, a long pause, then four more taps. The pause must not be
+        // treated as a very slow beat; the estimate should stay near 120.
+        var estimator = TapTempoEstimator()
+        for beat in 0..<4 {
+            estimator.record(at: Double(beat) * 0.5)
+        }
+        let pausedStart = 1.5 + 1.2
+        for beat in 0..<4 {
+            estimator.record(at: pausedStart + Double(beat) * 0.5)
+        }
+        XCTAssertEqual(estimator.bpm ?? 0, 120, accuracy: 6)
+    }
+
+    func testTapTempoDoesNotHalveOnOneMissedBeat() {
+        // A single doubled gap must be discarded, not averaged in, so the
+        // tempo never collapses toward half speed.
+        var estimator = TapTempoEstimator()
+        var time = 0.0
+        for beat in 0..<12 {
+            estimator.record(at: time)
+            // Skip one beat in the middle to simulate a dropped tap.
+            time += (beat == 6 ? 1.0 : 0.5)
+        }
+        let bpm = estimator.bpm ?? 0
+        XCTAssertEqual(bpm, 120, accuracy: 6)
+    }
+
+    func testTapTempoIgnoresDoubleTap() {
+        // A stray double hit must not pull the estimate up.
+        var estimator = TapTempoEstimator()
+        var time = 0.0
+        for beat in 0..<12 {
+            estimator.record(at: time)
+            if beat == 6 {
+                estimator.record(at: time + 0.05)
+            }
+            time += 0.5
+        }
+        XCTAssertEqual(estimator.bpm ?? 0, 120, accuracy: 6)
+    }
+
+    func testTapTempoNeedsThreeReliableIntervalsBeforeReporting() {
+        // Three taps give only two intervals; the estimate stays nil until the
+        // fourth tap supplies a third clean interval.
+        var estimator = TapTempoEstimator()
+        estimator.record(at: 0)
+        estimator.record(at: 0.5)
+        estimator.record(at: 1.0)
+        XCTAssertNil(estimator.bpm)
+        estimator.record(at: 1.5)
+        XCTAssertNotNil(estimator.bpm)
+        XCTAssertEqual(estimator.bpm ?? 0, 120, accuracy: 0.01)
+    }
+
+    func testTapTempoMedianIsRobustToJitter() {
+        // One late tap among several should barely move the median estimate.
+        var estimator = TapTempoEstimator()
+        let times: [TimeInterval] = [0, 0.5, 1.0, 1.75, 2.25, 2.75, 3.25]
+        for time in times {
+            estimator.record(at: time)
+        }
+        XCTAssertEqual(estimator.bpm ?? 0, 120, accuracy: 12)
+    }
+
+    func testTapTempoReliableIntervalCountGrowsWithCleanTaps() {
+        var estimator = TapTempoEstimator()
+        for beat in 0..<5 {
+            estimator.record(at: Double(beat) * 0.5)
+        }
+        XCTAssertEqual(estimator.reliableIntervalCount, 4)
+    }
 
 
     func testTripletSubdivisionProducesTwelveClicksInFourFour() {

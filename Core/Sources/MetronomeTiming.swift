@@ -191,6 +191,32 @@ public enum MetronomePattern {
 }
 
 public struct TapTempoEstimator: Sendable {
+    // MARK: - Tuning constants
+
+    /// Absolute plausibility window for one interval. Outside it the value is
+    /// noise rather than a beat: too short is a bouncing or double tap, too
+    /// long means the user stopped tapping.
+    private static let minimumPlausibleInterval: TimeInterval = 0.05
+    private static let maximumPlausibleInterval: TimeInterval = 3.0
+
+    /// Gaps below this fraction of the median are rejected. A gap under 60% of
+    /// the beat is either a stray double hit or jitter, so it must not pollute
+    /// the estimate. 0.6 is the tighter of the jitter floor (0.55) and the
+    /// double-hit floor (0.6), so it covers both.
+    private static let minimumIntervalRatio: Double = 0.6
+
+    /// Gaps above this fraction of the median are rejected. A dropped tap
+    /// roughly doubles the gap and a pause between groups is even longer, so
+    /// both land above 1.6 and are discarded. This is what stops a missed beat
+    /// from halving the reported tempo, and what stops a pause between groups
+    /// of taps from dragging the average down.
+    private static let maximumIntervalRatio: Double = 1.6
+
+    /// A tempo is only reported once this many clean intervals exist. Four
+    /// taps produce three intervals, so the first result appears on the fourth
+    /// tap, but it is already robust because the intervals have been filtered.
+    private static let minimumReliableIntervalCount = 3
+
     public private(set) var timestamps: [TimeInterval] = []
     public private(set) var tapCount: Int = 0
     public let resetInterval: TimeInterval
@@ -243,13 +269,38 @@ public struct TapTempoEstimator: Sendable {
         return zip(timestamps.dropFirst(), timestamps).map { $0.0 - $0.1 }
     }
 
-    public var bpm: Double? {
-        let intervals = intervals.filter { $0 > 0.05 && $0 < 3 }
-        guard !intervals.isEmpty else { return nil }
-        let average = intervals.reduce(0, +) / Double(intervals.count)
-        guard average > 0 else { return nil }
-        return 60.0 / average
+    /// Intervals that are individually plausible, before outlier rejection.
+    private var plausibleIntervals: [TimeInterval] {
+        intervals.filter {
+            $0 > Self.minimumPlausibleInterval && $0 < Self.maximumPlausibleInterval
+        }
     }
+
+    /// Intervals kept after discarding double hits, dropped beats and pauses.
+    ///
+    /// A median defines the centre, and only intervals close to that centre
+    /// survive. The median is used instead of the mean because a single long
+    /// pause or a single dropped beat must not move the reference point.
+    public var reliableIntervals: [TimeInterval] {
+        let candidates = plausibleIntervals
+        guard !candidates.isEmpty else { return [] }
+        guard let center = Self.median(of: candidates), center > 0 else { return [] }
+        return candidates.filter { Self.isReliable($0, around: center) }
+    }
+
+    /// Robust tempo estimate, or nil until enough clean intervals exist.
+    ///
+    /// The centre of the retained intervals is again the median, so the result
+    /// does not drift with the occasional slow or fast tap.
+    public var bpm: Double? {
+        let reliable = reliableIntervals
+        guard reliable.count >= Self.minimumReliableIntervalCount else { return nil }
+        guard let center = Self.median(of: reliable), center > 0 else { return nil }
+        return 60.0 / center
+    }
+
+    /// How many clean intervals the current estimate is based on.
+    public var reliableIntervalCount: Int { reliableIntervals.count }
 
     public var hasEnoughTapsForInitialEstimate: Bool {
         tapCount >= groupSize
@@ -262,6 +313,22 @@ public struct TapTempoEstimator: Sendable {
     public mutating func markResultPublished() {
         lastPublishedTapCount = tapCount
     }
+
+    /// True when the interval sits within the accepted band around the centre.
+    private static func isReliable(_ interval: TimeInterval, around center: TimeInterval) -> Bool {
+        guard center > 0 else { return false }
+        let ratio = interval / center
+        return ratio >= minimumIntervalRatio && ratio <= maximumIntervalRatio
+    }
+
+    /// Median of a list, averaging the two middle values for an even count.
+    private static func median(of values: [TimeInterval]) -> TimeInterval? {
+        guard !values.isEmpty else { return nil }
+        let sorted = values.sorted()
+        let middle = sorted.count / 2
+        if sorted.count % 2 == 1 {
+            return sorted[middle]
+        }
+        return (sorted[middle - 1] + sorted[middle]) / 2
+    }
 }
-
-
