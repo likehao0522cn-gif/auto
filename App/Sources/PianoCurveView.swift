@@ -23,6 +23,7 @@ struct PianoCurveView: View {
     var body: some View {
         List {
             summarySection
+            measureSection
             templateSection
             regionSection
             keySection
@@ -52,6 +53,19 @@ struct PianoCurveView: View {
             .accessibilityLabel(Text(verbatim: "曲线概况"))
             .accessibilityValue(Text(verbatim: model.spokenSummary))
             .accessibilityHint(Text(verbatim: "轻点重新朗读"))
+        }
+    }
+
+    private var measureSection: some View {
+        Section("实测") {
+            NavigationLink {
+                PianoMeasureView()
+            } label: {
+                Text(verbatim: "测量这架琴")
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(verbatim: "测量这架琴"))
+            .accessibilityHint(Text(verbatim: "逐根弹奏琴弦，测出这架琴的非谐性"))
         }
     }
 
