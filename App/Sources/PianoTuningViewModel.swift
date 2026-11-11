@@ -34,6 +34,13 @@ final class PianoTuningViewModel: ObservableObject {
     private var lastSpokenVerdict: String?
     private var lastSoundAt: Date?
 
+    /// True while our own voice is playing. The phone's speaker leaks straight
+    /// back into the microphone, and at that point the analyser would happily
+    /// report our announcement as if it were a piano string. While this is set,
+    /// only a much louder frame counts as a string, and nothing is spoken again
+    /// until the current sentence ends.
+    private var isSpeaking = false
+
     var noteName: String { Note(midi: selectedMIDI).displayName }
 
     var canStart: Bool { !isListening }
@@ -58,11 +65,14 @@ final class PianoTuningViewModel: ObservableObject {
         errorMessage = nil
         verdict = .waiting
         do {
+            speech.onFinish = { [weak self] in
+                self?.finishSpeaking(settings: settings)
+            }
             try audioEngine.start { [weak self] estimate, _, _ in
                 self?.handle(estimate: estimate, curve: curve)
             }
             isListening = true
-            speech.speak("开始调律 \(noteName)", settings: settings)
+            speak("开始调律 \(noteName)", settings: settings)
         } catch {
             isListening = false
             errorMessage = TunerAudioEngineError.chineseMessage(for: error)
@@ -71,8 +81,12 @@ final class PianoTuningViewModel: ObservableObject {
     }
 
     func stop(settings: SpeechSettings) {
+        speech.stop()
         audioEngine.stop()
         isListening = false
+        isSpeaking = false
+        lastSpokenVerdict = nil
+        lastSoundAt = nil
         verdict = .waiting
         let _ = settings
     }
@@ -93,15 +107,30 @@ final class PianoTuningViewModel: ObservableObject {
         }
     }
 
+    /// Minimum level to treat a frame as a struck string.
+    private static let quietThreshold: Double = 0.006
+
+    /// While our own voice is playing, only a much louder sound can be a real
+    /// string. The speaker re-enters the microphone at a modest level, so a
+    /// piano note right after an announcement still clears this bar while the
+    /// announcement itself does not.
+    private static let speechThreshold: Double = 0.05
+
     private func handle(estimate: PitchEstimate, curve: StretchCurve) {
         guard isListening else { return }
+
         let now = Date()
+        let threshold = isSpeaking ? Self.speechThreshold : Self.quietThreshold
 
         guard let frequency = estimate.frequency,
               estimate.confidence >= 0.6,
-              estimate.rms >= 0.006 else {
-            let silence = lastSoundAt.map { now.timeIntervalSince($0) } ?? .infinity
-            if silence >= 0.35 { verdict = .waiting }
+              estimate.rms >= threshold else {
+            // While we are talking, silence means "our voice is playing", not
+            // "the user stopped". Keep the previous reading on screen.
+            if !isSpeaking {
+                let silence = lastSoundAt.map { now.timeIntervalSince($0) } ?? .infinity
+                if silence >= 0.35 { verdict = .waiting }
+            }
             return
         }
         lastSoundAt = now
@@ -123,12 +152,41 @@ final class PianoTuningViewModel: ObservableObject {
 
     /// Announces the verdict once, and only when it changes, so the user is not
     /// talked over while adjusting.
+    ///
+    /// While our own voice is still playing, the verdict is recorded but not
+    /// spoken. Otherwise a reading taken during an announcement would trigger
+    /// another announcement, and the two would feed each other.
     func announceIfChanged(settings: SpeechSettings) {
         let text = spokenVerdict()
         guard text != lastSpokenVerdict else { return }
         lastSpokenVerdict = text
+
+        guard !isSpeaking else { return }
         guard case .waiting = verdict else {
-            speech.speak(text, settings: settings)
+            speak(text, settings: settings)
+            return
+        }
+    }
+
+    /// Speaks and marks the microphone as busy for the duration.
+    private func speak(_ text: String, settings: SpeechSettings) {
+        isSpeaking = true
+        speech.speak(text, settings: settings)
+    }
+
+    /// Called when our voice finishes.
+    ///
+    /// A reading taken during the announcement was recorded but not spoken. If
+    /// it differs from what was just said, speak it now; otherwise stay quiet,
+    /// which also prevents the announcement from triggering another one.
+    private func finishSpeaking(settings: SpeechSettings) {
+        isSpeaking = false
+        guard isListening else { return }
+        let current = spokenVerdict()
+        guard current != lastSpokenVerdict else { return }
+        guard case .waiting = verdict else {
+            lastSpokenVerdict = current
+            speak(current, settings: settings)
             return
         }
     }

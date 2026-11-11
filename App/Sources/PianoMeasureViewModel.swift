@@ -31,6 +31,10 @@ final class PianoMeasureViewModel: ObservableObject {
     private var captureStartedAt: Date?
     private var captureTask: Task<Void, Never>?
 
+    /// True while we are talking. The speaker leaks into the microphone, so a
+    /// capture must not start or continue while our own voice is playing.
+    private var isSpeaking = false
+
     /// How long to listen after the string is played before analysing.
     private let captureWindow: TimeInterval = 0.45
 
@@ -55,11 +59,15 @@ final class PianoMeasureViewModel: ObservableObject {
         captureStartedAt = nil
 
         do {
+            speech.onFinish = { [weak self] in
+                self?.isSpeaking = false
+            }
             try audioEngine.start { [weak self] estimate, samples, sampleRate in
                 self?.handle(estimate: estimate, samples: samples, sampleRate: sampleRate)
             }
             isListening = true
             stage = .listening
+            isSpeaking = true
             speech.speak("请弹奏 \(Note(midi: selectedMIDI).displayName)", settings: settings)
         } catch {
             isListening = false
@@ -73,6 +81,7 @@ final class PianoMeasureViewModel: ObservableObject {
         captureTask = nil
         stopEngine()
         stage = .idle
+        isSpeaking = true
         speech.speak("已取消", settings: settings)
     }
 
@@ -83,16 +92,21 @@ final class PianoMeasureViewModel: ObservableObject {
         measurements.removeAll()
         lastMeasurement = nil
         stage = .idle
+        isSpeaking = true
         speech.speak("已清除全部测量", settings: settings)
     }
 
     private func stopEngine() {
         audioEngine.stop()
         isListening = false
+        isSpeaking = false
     }
 
     private func handle(estimate: PitchEstimate, samples: [Float], sampleRate: Double) {
         guard isListening else { return }
+
+        // Ignore the microphone entirely while our own prompt is playing.
+        guard !isSpeaking else { return }
 
         // Wait for a real attack. A quiet room should not start a measurement.
         guard estimate.frequency != nil, estimate.rms >= 0.006 else { return }

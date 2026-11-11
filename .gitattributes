@@ -1,0 +1,4 @@
+# Let git normalise line endings on commit. Keeping this explicit stops a
+# file from showing as entirely changed just because a Windows editor wrote
+# CRLF line endings into it.
+* text=auto
