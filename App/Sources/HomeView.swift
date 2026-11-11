@@ -38,6 +38,15 @@ struct HomeView: View {
                 .accessibilityLabel(Text(verbatim: "调音器"))
 
                 NavigationLink {
+                    PianoTuningHomeView()
+                } label: {
+                    Text(verbatim: "钢琴调律")
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: "钢琴调律"))
+                .accessibilityHint(Text(verbatim: "专业钢琴调律，按拉伸曲线逐音调音"))
+
+                NavigationLink {
                     MetronomeView()
                 } label: {
                     Text(verbatim: "节拍器")

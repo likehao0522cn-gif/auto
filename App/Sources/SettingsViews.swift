@@ -14,17 +14,6 @@ struct SettingsView: View {
                 .accessibilityLabel(Text(verbatim: "音高、容差和反馈"))
             }
 
-            Section("钢琴调律") {
-                NavigationLink {
-                    PianoCurveView()
-                } label: {
-                    Text(verbatim: "调律曲线")
-                }
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(Text(verbatim: "调律曲线"))
-                .accessibilityHint(Text(verbatim: "查看和调整钢琴的拉伸曲线"))
-            }
-
             Section("声音") {
                 NavigationLink {
                     SoundSettingsView()

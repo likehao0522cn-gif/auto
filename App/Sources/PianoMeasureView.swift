@@ -8,6 +8,7 @@ import TuneCore
 /// are listed so the user can tell how far along they are.
 struct PianoMeasureView: View {
     @EnvironmentObject private var appModel: AppModel
+    @EnvironmentObject private var curveModel: PianoCurveViewModel
     @StateObject private var model = PianoMeasureViewModel()
     @StateObject private var speech = SpeechFeedback()
     @Environment(\.dismiss) private var dismiss
@@ -18,6 +19,7 @@ struct PianoMeasureView: View {
             actionSection
             resultSection
             progressSection
+            applySection
         }
         .navigationTitle("测量钢琴")
         .onDisappear {
@@ -96,6 +98,24 @@ struct PianoMeasureView: View {
         }
     }
 
+    private var applySection: some View {
+        Section {
+            Button {
+                applyToCurve()
+            } label: {
+                Text(verbatim: "用这批测量生成曲线")
+            }
+            .disabled(model.measuredCount == 0)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(verbatim: "用这批测量生成曲线"))
+            .accessibilityHint(Text(verbatim: "把测得的非谐性应用到当前调律曲线"))
+        } footer: {
+            Text(verbatim: "至少要测几根弦才比较可靠，建议低音、中音、高音各测几根")
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: "至少要测几根弦才比较可靠，建议低音、中音、高音各测几根"))
+        }
+    }
+
     private func measuredRow(_ midi: Int) -> some View {
         let measurement = model.measurements[midi]
         let text = measurement.map { model.describe($0) } ?? ""
@@ -139,6 +159,11 @@ struct PianoMeasureView: View {
         case .failed(let message):
             return message
         }
+    }
+
+    private func applyToCurve() {
+        curveModel.apply(measured: model.profile)
+        speech.speak(curveModel.spokenSummary, settings: appModel.speechSettings)
     }
 
     private func measure() {

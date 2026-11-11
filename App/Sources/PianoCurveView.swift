@@ -8,7 +8,7 @@ import TuneCore
 /// stepped through one at a time. Nothing here depends on seeing the curve.
 struct PianoCurveView: View {
     @EnvironmentObject private var appModel: AppModel
-    @StateObject private var model = PianoCurveViewModel()
+    @EnvironmentObject private var model: PianoCurveViewModel
     @State private var selectedKey: Int = 69
     @StateObject private var speech = SpeechFeedback()
 
