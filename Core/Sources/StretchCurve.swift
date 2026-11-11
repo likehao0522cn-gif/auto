@@ -89,6 +89,20 @@ public enum StretchCurveBuilder {
         }
         return StretchCurve(cents: cents, source: "Railsback 通用模板", isMeasured: false)
     }
+    /// Curve for a named class of piano, before anything is measured on the
+    /// actual instrument. The Railsback shape is kept, but its width is scaled
+    /// by how much this class of piano's inharmonicity differs from the
+    /// reference, so a small upright gets a wider curve and a grand a narrower
+    /// one.
+    public static func template(for model: PianoModelTemplate) -> StretchCurve {
+        var cents: [Int: Double] = [:]
+        for key in lowestMIDI...highestMIDI {
+            let base = RailsbackTemplate.cents(forMIDI: key)
+            let scale = stiffnessScale(forKey: key, b: model.b(forMIDI: key))
+            cents[key] = base * scale
+        }
+        return StretchCurve(cents: cents, source: model.displayName, isMeasured: false)
+    }
 
     /// How much more or less this piano's stretch should be than the reference,
     /// based on how its measured inharmonicity compares with the default model
