@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import json
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -8,9 +9,19 @@ from pathlib import Path
 REPOSITORY = "likehao0522cn-gif/auto"
 BUNDLE_ID = "com.shm06.TuneMetronome"
 
+# GitHub redirects release downloads to release-assets.githubusercontent.com,
+# which is throttled or unreachable on some networks. SideStore then stalls a
+# few percent into the download. Serving links through a proxy avoids that
+# redirect entirely; the proxy returns identical bytes, so the app is unchanged.
+#
+# Set STORE_DOWNLOAD_MIRROR to "" to fall back to direct GitHub links.
+MIRROR = os.environ.get("STORE_DOWNLOAD_MIRROR", "https://gh-proxy.com/")
+DIRECT_HOST = "https://github.com"
+
 
 def release_url(version: str, asset: str) -> str:
-    return f"https://github.com/{REPOSITORY}/releases/download/v{version}/{asset}"
+    direct = f"{DIRECT_HOST}/{REPOSITORY}/releases/download/v{version}/{asset}"
+    return MIRROR + direct if MIRROR else direct
 
 
 def main() -> None:
@@ -56,12 +67,10 @@ def main() -> None:
     listed_versions = [
         entry for entry in listed_versions if entry["version"] != version
     ]
-    listed_versions.insert(0, version_entry(
-        version,
-        now,
-        ipa_size,
-        "修复 E7 以上高音检测不到的八度错误；修复 G1 附近低音被误判为多个音；常用速度可直接加入当前速度无需输入；调音器首次进入显示开始聆听。",
-    ))
+    # The note for the version being built. Supplied by CI so it cannot go
+    # stale the way a hard-coded string does.
+    note = os.environ.get("STORE_VERSION_NOTE", "").strip() or "调音节拍器测试版，包含本次更新的修复与改进。"
+    listed_versions.insert(0, version_entry(version, now, ipa_size, note))
 
     source = {
         "name": "调音节拍器测试源",

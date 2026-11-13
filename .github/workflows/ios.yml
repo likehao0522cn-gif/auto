@@ -136,6 +136,8 @@ jobs:
           VERSION="${GITHUB_REF_NAME#v}"
           cp unsigned-ipa/TuneMetronome-unsigned.ipa unsigned-ipa/TuneMetronome.ipa
           SIZE=$(stat -f%z unsigned-ipa/TuneMetronome.ipa)
+          # The note SideStore shows for this version. Update per release.
+          export STORE_VERSION_NOTE="调音节拍器 $VERSION 测试版"
           python3 scripts/generate_store_source.py "$VERSION" "$SIZE" docs/store/source.json
 
       - name: Publish GitHub release
