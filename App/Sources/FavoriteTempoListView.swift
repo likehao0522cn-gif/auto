@@ -12,6 +12,9 @@ struct FavoriteTempoListView: View {
     @State private var newTempoInput = ""
     @State private var addError: String?
     @FocusState private var isAddFieldFocused: Bool
+    /// Set once the list has begun closing, so the speech callback and the
+    /// safety timer cannot both fire a dismissal.
+    @State private var hasClosed = false
 
     private var store: FavoriteTempoStore { metronome.favorites }
 
@@ -21,8 +24,10 @@ struct FavoriteTempoListView: View {
                 Section {
                     ForEach(store.sortedTempos) { tempo in
                         Button {
-                            metronome.applyFavoriteTempo(tempo.bpm)
-                            dismiss()
+                            // Speak the new tempo first, then close. Closing
+                            // immediately can cut the announcement short when
+                            // VoiceOver takes the focus back on dismissal.
+                            applyAndClose(tempo.bpm)
                         } label: {
                             HStack {
                                 Text(verbatim: "\(tempo.bpm) BPM")
@@ -150,6 +155,26 @@ struct FavoriteTempoListView: View {
         // elements to swipe past and makes it easy to land on the wrong one.
         // Filling the screen means every swipe lands inside the list.
         .presentationDetents([.large])
+    }
+
+    /// Applies a tempo, then closes the list once the announcement finishes.
+    ///
+    /// A timer is the safety net: if the speech completion never arrives (a
+    /// muted system voice, a swallowed announcement), the list still closes
+    /// rather than trapping the user on a screen they wanted to leave.
+    private func applyAndClose(_ bpm: Int) {
+        guard !hasClosed else { return }
+        metronome.applyFavoriteTempo(bpm) { closeOnce() }
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(2))
+            closeOnce()
+        }
+    }
+
+    private func closeOnce() {
+        guard !hasClosed else { return }
+        hasClosed = true
+        dismiss()
     }
 
     /// True when this tempo is the one currently playing.

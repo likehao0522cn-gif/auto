@@ -136,8 +136,13 @@ final class MetronomeViewModel: ObservableObject {
 
     /// Applies a saved tempo. The value is announced because the user picked it
     /// from a list rather than reading it off the main screen.
-    func applyFavoriteTempo(_ bpm: Int) {
+    ///
+    /// `completion` runs once that announcement has finished. The list uses it
+    /// to close only after the new tempo has been spoken; dismissing first can
+    /// swallow the announcement when VoiceOver owns the focus.
+    func applyFavoriteTempo(_ bpm: Int, completion: (() -> Void)? = nil) {
         setBPM(Double(bpm))
+        speech.onFinish = completion
         speak("速度已设为 \(Int(configuration.bpm)) BPM")
     }
 
