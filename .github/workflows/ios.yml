@@ -21,7 +21,7 @@ jobs:
         run: |
           set -euo pipefail
           echo "Checked out commit: $(git rev-parse HEAD)"
-          grep -q 'NOTE_BOUNDARY_2026_11_11_B' App/Sources/HomeView.swift
+          grep -q 'NOTE_BOUNDARY_2026_11_14' App/Sources/HomeView.swift
 
       - name: Run core tests with SwiftPM
         run: |
@@ -115,7 +115,7 @@ jobs:
           set -euo pipefail
           APP_PATH="$(find build/Build/Products/Release-iphoneos -maxdepth 1 -name '*.app' -type d | head -1)"
           test -n "$APP_PATH"
-          grep -a -q 'NOTE_BOUNDARY_2026_11_11_B' "$APP_PATH/TuneMetronome"
+          grep -a -q 'NOTE_BOUNDARY_2026_11_14' "$APP_PATH/TuneMetronome"
           rm -rf unsigned-ipa
           mkdir -p unsigned-ipa/Payload
           cp -R "$APP_PATH" unsigned-ipa/Payload/
@@ -137,7 +137,7 @@ jobs:
           cp unsigned-ipa/TuneMetronome-unsigned.ipa unsigned-ipa/TuneMetronome.ipa
           SIZE=$(stat -f%z unsigned-ipa/TuneMetronome.ipa)
           # The note SideStore shows for this version. Update per release.
-          export STORE_VERSION_NOTE="调音节拍器 $VERSION 测试版"
+          export STORE_VERSION_NOTE="新增节拍器定时，可选 1 分钟到 1 小时或自定义；修复输入速度打不开键盘；常用速度改为全屏列表，摸到当前速度会朗读已选中；选速度后先播报再关闭"
           python3 scripts/generate_store_source.py "$VERSION" "$SIZE" docs/store/source.json
 
       - name: Publish GitHub release

@@ -72,10 +72,10 @@ struct HomeView: View {
             }
 
             Section("版本") {
-                Text(verbatim: "0.8.1 修复旁白干扰钢琴调律 2026-11-11")
+                Text(verbatim: "0.9.0 节拍器定时与输入修复 2026-11-14")
                     .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(Text(verbatim: "0.8.1 修复旁白干扰钢琴调律，构建日期 2026 年 11 月 11 日"))
-                    .accessibilityIdentifier("NOTE_BOUNDARY_2026_11_11_B")
+                    .accessibilityLabel(Text(verbatim: "0.9.0 节拍器定时与输入修复，构建日期 2026 年 11 月 14 日"))
+                    .accessibilityIdentifier("NOTE_BOUNDARY_2026_11_14")
             }
 
             Section("当前乐器") {
