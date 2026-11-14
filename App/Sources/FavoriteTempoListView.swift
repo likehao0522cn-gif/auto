@@ -41,10 +41,16 @@ struct FavoriteTempoListView: View {
                         .buttonStyle(.plain)
                         .accessibilityElement(children: .ignore)
                         .accessibilityLabel(Text(verbatim: "\(tempo.bpm) BPM"))
+                        // The current tempo announces that it is selected before
+                        // anything else. A plain isSelected trait is easy to miss,
+                        // and this is the one fact a blind user needs when swiping
+                        // through the list.
                         .accessibilityValue(Text(verbatim: describe(tempo)))
-                        .accessibilityHint(Text(verbatim: "双击应用这个速度"))
+                        .accessibilityHint(Text(verbatim: isCurrent(tempo)
+                            ? "正在使用，双击可再次应用"
+                            : "双击切换到 \(tempo.bpm) BPM 并关闭"))
                         .accessibilityAddTraits(
-                            tempo.bpm == Int(metronome.configuration.bpm) ? [.isSelected] : []
+                            isCurrent(tempo) ? [.isSelected] : []
                         )
                         .swipeActions {
                             Button(role: .destructive) {
@@ -139,17 +145,26 @@ struct FavoriteTempoListView: View {
                 .background(.bar)
             }
         }
-        // A half sheet keeps the metronome visible underneath, so opening the
-        // list does not feel like leaving the screen. It can still be dragged
-        // up to full height when the list grows.
-        .presentationDetents([.medium, .large])
-        // A grabber makes it obvious the card can be pulled down to close,
-        // which matters when the user cannot see the dimmed area behind it.
-        .presentationDragIndicator(.visible)
+        // A full-height list, not a half sheet. A card that leaves the
+        // metronome visible underneath gives a screen-reader user extra
+        // elements to swipe past and makes it easy to land on the wrong one.
+        // Filling the screen means every swipe lands inside the list.
+        .presentationDetents([.large])
     }
 
+    /// True when this tempo is the one currently playing.
+    private func isCurrent(_ tempo: FavoriteTempo) -> Bool {
+        tempo.bpm == Int(metronome.configuration.bpm)
+    }
+
+    /// Spoken description of a row. The selected tempo says so first, because
+    /// that is the single most useful fact while swiping. The statistics come
+    /// after, so they never bury the important part.
     private func describe(_ tempo: FavoriteTempo) -> String {
         var parts: [String] = []
+        if isCurrent(tempo) {
+            parts.append("已选中，正在使用")
+        }
         parts.append(tempo.isManual ? "手动收藏" : "自动加入")
         parts.append("用过 \(tempo.useCount) 次")
         if tempo.playMinutes > 0 {
