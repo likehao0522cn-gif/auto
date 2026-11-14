@@ -108,13 +108,17 @@ struct FavoriteTempoListView: View {
         // Message-composer style: field and confirm share one row above the
         // keyboard, matching where a chat app puts its send button.
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            if isShowingAddInput, isAddFieldFocused {
+            // Show on isShowingAddInput alone. Requiring focus too was the same
+            // deadlock the metronome screen had: the field only appeared once
+            // focused, but focus needs the field to exist first.
+            if isShowingAddInput {
                 HStack(spacing: 10) {
                     TextField("输入 20 到 300", text: $newTempoInput)
                         .keyboardType(.numberPad)
                         .textFieldStyle(.roundedBorder)
                         .focused($isAddFieldFocused)
                         .submitLabel(.done)
+                        .onAppear { isAddFieldFocused = true }
                         .onSubmit { addTypedTempo() }
                         .accessibilityLabel(Text(verbatim: "输入要添加的速度"))
 
@@ -135,9 +139,13 @@ struct FavoriteTempoListView: View {
                 .background(.bar)
             }
         }
-        // Full height: the list plus the add controls did not fit in a
-        // medium sheet, which made the screen feel cramped and half-empty.
-        .presentationDetents([.large])
+        // A half sheet keeps the metronome visible underneath, so opening the
+        // list does not feel like leaving the screen. It can still be dragged
+        // up to full height when the list grows.
+        .presentationDetents([.medium, .large])
+        // A grabber makes it obvious the card can be pulled down to close,
+        // which matters when the user cannot see the dimmed area behind it.
+        .presentationDragIndicator(.visible)
     }
 
     private func describe(_ tempo: FavoriteTempo) -> String {
@@ -173,9 +181,8 @@ struct FavoriteTempoListView: View {
                 announce("这个速度已经在常用里")
                 addError = "这个速度已经在常用里。"
             } else if store.add(bpm: bpm) {
-                isShowingAddInput = false
-                isAddFieldFocused = false
                 announce("已加入常用速度 \(bpm)")
+                dismissAddInput()
                 addError = nil
             } else {
                 addError = "常用速度最多 \(FavoriteTempoRules.capacity) 个，请先删除一个。"
@@ -190,6 +197,19 @@ struct FavoriteTempoListView: View {
             }
             addError = message
             announce(message)
+        }
+    }
+
+    /// Applies the new tempo first, then lets the keyboard animate away before
+    /// the input bar disappears, so the field is not ripped out mid-animation.
+    private func dismissAddInput() {
+        isAddFieldFocused = false
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(250))
+            guard !isAddFieldFocused else { return }
+            withAnimation {
+                isShowingAddInput = false
+            }
         }
     }
 
