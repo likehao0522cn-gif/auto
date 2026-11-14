@@ -36,6 +36,12 @@ final class MetronomeViewModel: ObservableObject {
     @Published private(set) var statusText: String = "已停止"
     @Published private(set) var errorMessage: String?
 
+    /// Countdown for the current run, if the user set one. Published so the
+    /// metronome screen can show the time left.
+    @Published private(set) var runTimer: MetronomeTimer? = nil
+    /// Seconds left, refreshed about once a second while a countdown runs.
+    @Published private(set) var remainingSeconds: TimeInterval? = nil
+
     private let engine = MetronomeAudioEngine()
     private let speech = SpeechFeedback()
     /// Usage statistics and the favorite tempo list.
@@ -49,6 +55,8 @@ final class MetronomeViewModel: ObservableObject {
     private var restartTask: Task<Void, Never>?
     /// Accumulates playback time into the tempo statistics.
     private var playTimeTask: Task<Void, Never>?
+    /// Ticks the countdown and stops the metronome when it reaches zero.
+    private var timerTask: Task<Void, Never>?
 
     init(
         defaults: UserDefaults = .standard,
@@ -58,6 +66,12 @@ final class MetronomeViewModel: ObservableObject {
         self.favorites = favorites ?? FavoriteTempoStore(defaults: defaults)
         // Clean up preferences left behind by removed features (count-in was dropped).
         defaults.removeObject(forKey: Keys.legacyCountIn)
+
+        // Restore the countdown length the user last chose. The countdown
+        // itself stays idle until playback starts.
+        if let stored = defaults.object(forKey: Keys.runDuration) as? Double, stored > 0 {
+            self.runTimer = MetronomeTimer(duration: stored)
+        }
 
         let bpm = defaults.object(forKey: Keys.bpm) as? Double ?? 120
         let numerator = defaults.integer(forKey: Keys.numerator)
@@ -114,6 +128,12 @@ final class MetronomeViewModel: ObservableObject {
         restartTask = nil
         playTimeTask?.cancel()
         playTimeTask = nil
+        timerTask?.cancel()
+        timerTask = nil
+        // Keep the chosen duration but stop the countdown: starting again
+        // should honour the same limit rather than forgetting it.
+        runTimer?.cancel()
+        remainingSeconds = nil
         hapticTask?.cancel()
         hapticTask = nil
         engine.stop()
@@ -157,6 +177,102 @@ final class MetronomeViewModel: ObservableObject {
         configuration.bpm = MetronomeTempo.clampedBPM(bpm)
     }
 
+    // MARK: - Countdown timer
+
+    /// Sets how long the metronome should play, once it is started.
+    ///
+    /// Setting a duration does not start the countdown; that happens when
+    /// playback begins, so the timer always measures actual playing time.
+    func setRunDuration(_ duration: TimeInterval?) {
+        guard let duration, duration > 0 else {
+            clearRunTimer()
+            return
+        }
+        var timer = MetronomeTimer(duration: duration)
+        if isPlaying {
+            timer.start()
+            startTimerTicking()
+        }
+        runTimer = timer
+        remainingSeconds = isPlaying ? timer.remaining() : nil
+        defaults.set(duration, forKey: Keys.runDuration)
+    }
+
+    /// Cancels the countdown without stopping playback.
+    func clearRunTimer() {
+        timerTask?.cancel()
+        timerTask = nil
+        runTimer = nil
+        remainingSeconds = nil
+        defaults.removeObject(forKey: Keys.runDuration)
+    }
+
+    /// Speaks a short confirmation such as "定时设为 10 分钟". Uses the same
+    /// voice channel as the rest of the metronome, so a user on app voice
+    /// hears it just as a VoiceOver user hears the announcement.
+    func announce(_ text: String) {
+        speak(text)
+    }
+
+    /// Spoken description of the remaining time, for the query button.
+    func spokenRemainingTime() -> String {
+        guard let remaining = remainingSeconds else {
+            return "没有设置定时"
+        }
+        let total = Int(remaining.rounded())
+        let minutes = total / 60
+        let seconds = total % 60
+        if minutes > 0, seconds > 0 {
+            return "还剩 \(minutes) 分 \(seconds) 秒"
+        }
+        if minutes > 0 {
+            return "还剩 \(minutes) 分钟"
+        }
+        return "还剩 \(seconds) 秒"
+    }
+
+    /// Starts the countdown alongside playback.
+    private func startRunTimerIfNeeded() {
+        guard var timer = runTimer, timer.duration > 0 else { return }
+        timer.start()
+        runTimer = timer
+        remainingSeconds = timer.remaining()
+        startTimerTicking()
+    }
+
+    /// Refreshes the remaining time and stops the metronome at zero.
+    ///
+    /// The deadline is an absolute date, so a suspended app still stops at the
+    /// right moment instead of drifting by however long it was asleep.
+    private func startTimerTicking() {
+        timerTask?.cancel()
+        timerTask = Task { @MainActor [weak self] in
+            while true {
+                guard let self, let timer = self.runTimer else { return }
+                if timer.hasExpired() {
+                    self.remainingSeconds = 0
+                    self.finishRunTimer()
+                    return
+                }
+                self.remainingSeconds = timer.remaining()
+                try? await Task.sleep(for: .seconds(1))
+                if Task.isCancelled { return }
+            }
+        }
+    }
+
+    /// Called at the end of a countdown: stop playback and say why.
+    private func finishRunTimer() {
+        // Clear the task reference first: stop() cancels it, and cancelling the
+        // task from inside itself would abort the lines after it.
+        timerTask = nil
+        runTimer?.cancel()
+        remainingSeconds = nil
+        stop()
+        statusText = "定时结束"
+        speak("定时结束，节拍器已停止")
+    }
+
     func resetDefaults() {
         stop()
         configuration = MetronomeConfiguration()
@@ -178,6 +294,7 @@ final class MetronomeViewModel: ObservableObject {
             errorMessage = nil
             favorites.recordStart(bpm: Int(configuration.bpm))
             startPlayTimeTracking()
+            startRunTimerIfNeeded()
             beginPlaybackFeedback(announceStart: announceStart)
         } catch {
             isPlaying = false
@@ -325,6 +442,7 @@ final class MetronomeViewModel: ObservableObject {
         static let subdivision = "metronome.subdivision"
         static let timbre = "metronome.timbre"
         static let hapticsEnabled = "metronome.hapticsEnabled"
+        static let runDuration = "metronome.runDuration"
         static let legacyCountIn = "metronome.countIn"
     }
 }

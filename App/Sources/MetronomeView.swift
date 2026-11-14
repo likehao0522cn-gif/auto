@@ -9,6 +9,7 @@ struct MetronomeView: View {
     @State private var bpmInputError: String?
     @FocusState private var isBPMInputFocused: Bool
     @State private var isShowingFavorites = false
+    @State private var isShowingTimer = false
 
     private var timeSignatureBinding: Binding<TimeSignature> {
         Binding(
@@ -82,6 +83,9 @@ struct MetronomeView: View {
         .sheet(isPresented: $isShowingFavorites) {
             FavoriteTempoListView()
         }
+        .sheet(isPresented: $isShowingTimer) {
+            MetronomeTimerView()
+        }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 NavigationLink {
@@ -147,6 +151,17 @@ struct MetronomeView: View {
                 .accessibilityLabel(Text(verbatim: "测速"))
             }
 
+            Button {
+                isShowingTimer = true
+            } label: {
+                secondaryActionLabel(timerButtonTitle, systemImage: "timer")
+            }
+            .buttonStyle(.bordered)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(verbatim: "定时"))
+            .accessibilityValue(Text(verbatim: timerButtonValue))
+            .accessibilityHint(Text(verbatim: "打开定时设置，可以让节拍器播放指定时长后自动停止"))
+
             // Full-width so the three actions never crowd each other on a
             // narrow screen, which matters for users who tap by touch.
             Button {
@@ -183,6 +198,45 @@ struct MetronomeView: View {
                     .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
+    }
+
+    /// What the timer button says. While a countdown runs it shows the time
+    /// left, so a sighted user can glance at it.
+    private var timerButtonTitle: String {
+        if let remaining = metronome.remainingSeconds {
+            return Self.formatRemaining(remaining)
+        }
+        if let duration = metronome.runTimer?.duration {
+            return Self.formatDuration(duration)
+        }
+        return "定时"
+    }
+
+    /// Spoken value for the timer button.
+    private var timerButtonValue: String {
+        if metronome.remainingSeconds != nil {
+            return metronome.spokenRemainingTime()
+        }
+        if let duration = metronome.runTimer?.duration {
+            return "已设为 " + Self.formatDuration(duration)
+        }
+        return "未设置"
+    }
+
+    /// "10 分钟" style text for a configured length.
+    static func formatDuration(_ seconds: TimeInterval) -> String {
+        let total = Int(seconds.rounded())
+        let minutes = total / 60
+        if minutes >= 60, minutes % 60 == 0 { return "\(minutes / 60) 小时" }
+        if minutes > 0, total % 60 == 0 { return "\(minutes) 分钟" }
+        return "\(minutes) 分 \(total % 60) 秒"
+    }
+
+    /// "还剩 3 分 20 秒" style text for a running countdown.
+    static func formatRemaining(_ seconds: TimeInterval) -> String {
+        let total = Int(seconds.rounded())
+        if total >= 60 { return "还剩 \(total / 60) 分 \(total % 60) 秒" }
+        return "还剩 \(total) 秒"
     }
 
     private func secondaryActionLabel(_ title: String, systemImage: String) -> some View {
