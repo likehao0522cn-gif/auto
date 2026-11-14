@@ -206,8 +206,14 @@ struct MetronomeView: View {
         if let remaining = metronome.remainingSeconds {
             return Self.formatRemaining(remaining)
         }
-        if let duration = metronome.runTimer?.duration {
-            return Self.formatDuration(duration)
+        // Stopped with time still owed: show that, not the original length, so
+        // the user can see a paused countdown has kept their place.
+        if let timer = metronome.runTimer, timer.duration > 0 {
+            let pending = timer.remainingOrPending()
+            if pending < timer.duration {
+                return "还剩 " + Self.formatShort(pending)
+            }
+            return Self.formatDuration(timer.duration)
         }
         return "定时"
     }
@@ -217,8 +223,12 @@ struct MetronomeView: View {
         if metronome.remainingSeconds != nil {
             return metronome.spokenRemainingTime()
         }
-        if let duration = metronome.runTimer?.duration {
-            return "已设为 " + Self.formatDuration(duration)
+        if let timer = metronome.runTimer, timer.duration > 0 {
+            let pending = timer.remainingOrPending()
+            if pending < timer.duration {
+                return "已暂停，还剩 " + Self.formatDuration(pending)
+            }
+            return "已设为 " + Self.formatDuration(timer.duration)
         }
         return "未设置"
     }
@@ -237,6 +247,13 @@ struct MetronomeView: View {
         let total = Int(seconds.rounded())
         if total >= 60 { return "还剩 \(total / 60) 分 \(total % 60) 秒" }
         return "还剩 \(total) 秒"
+    }
+
+    /// "3 分 20 秒" without a prefix.
+    static func formatShort(_ seconds: TimeInterval) -> String {
+        let total = Int(seconds.rounded())
+        if total >= 60 { return "\(total / 60) 分 \(total % 60) 秒" }
+        return "\(total) 秒"
     }
 
     private func secondaryActionLabel(_ title: String, systemImage: String) -> some View {

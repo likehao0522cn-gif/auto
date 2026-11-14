@@ -20,6 +20,12 @@ final class MetronomeViewModel: ObservableObject {
         }
     }
 
+    /// How a stop affects the countdown. Persisted, because it is a preference
+    /// rather than something to re-pick every run.
+    @Published var timerPauseBehaviour: TimerPauseBehaviour {
+        didSet { defaults.set(timerPauseBehaviour.rawValue, forKey: Keys.timerPauseBehaviour) }
+    }
+
     @Published var hapticsEnabled: Bool {
         didSet {
             saveConfiguration()
@@ -92,6 +98,9 @@ final class MetronomeViewModel: ObservableObject {
             rawValue: defaults.string(forKey: Keys.timbre) ?? ""
         ) ?? .crisp
         self.hapticsEnabled = defaults.object(forKey: Keys.hapticsEnabled) as? Bool ?? true
+        self.timerPauseBehaviour = TimerPauseBehaviour(
+            rawValue: defaults.string(forKey: Keys.timerPauseBehaviour) ?? ""
+        ) ?? .playingTime
 
         interruptionObserver = NotificationCenter.default.addObserver(
             forName: AVAudioSession.interruptionNotification,
@@ -130,9 +139,10 @@ final class MetronomeViewModel: ObservableObject {
         playTimeTask = nil
         timerTask?.cancel()
         timerTask = nil
-        // Keep the chosen duration but stop the countdown: starting again
-        // should honour the same limit rather than forgetting it.
-        runTimer?.cancel()
+        // Pause the countdown rather than clearing it, so starting again
+        // continues where it left off instead of handing back a full duration.
+        // Which parts of the pause count is the user's choice.
+        runTimer?.pause(bankingElapsed: timerPauseBehaviour == .playingTime)
         remainingSeconds = nil
         hapticTask?.cancel()
         hapticTask = nil
@@ -234,6 +244,8 @@ final class MetronomeViewModel: ObservableObject {
     /// Starts the countdown alongside playback.
     private func startRunTimerIfNeeded() {
         guard var timer = runTimer, timer.duration > 0 else { return }
+        // start() is a no-op when a deadline already exists, so a rebuild of the
+        // audio engine cannot restart the countdown.
         timer.start()
         runTimer = timer
         remainingSeconds = timer.remaining()
@@ -278,6 +290,7 @@ final class MetronomeViewModel: ObservableObject {
         configuration = MetronomeConfiguration()
         timbre = .crisp
         hapticsEnabled = true
+        timerPauseBehaviour = .playingTime
     }
 
     func tickHaptic(isAccent: Bool) {
@@ -443,6 +456,7 @@ final class MetronomeViewModel: ObservableObject {
         static let timbre = "metronome.timbre"
         static let hapticsEnabled = "metronome.hapticsEnabled"
         static let runDuration = "metronome.runDuration"
+        static let timerPauseBehaviour = "metronome.timerPauseBehaviour"
         static let legacyCountIn = "metronome.countIn"
     }
 }

@@ -53,6 +53,51 @@ final class MetronomeTimerTests: XCTestCase {
         XCTAssertNil(timer.remaining(at: date(10)))
     }
 
+    // MARK: - Pause behaviour
+
+    func testWallClockPauseKeepsCounting() {
+        // Ten minutes at t=0; pause at 180s and resume at 300s. Because the
+        // pause itself counts, only 300s should be left on resume.
+        var timer = MetronomeTimer(duration: 600)
+        timer.start(from: date(0))
+        timer.pause(bankingElapsed: false, at: date(180))
+        timer.start(from: date(300))
+        XCTAssertEqual(timer.remaining(at: date(300)) ?? 0, 300, accuracy: 0.001)
+        XCTAssertTrue(timer.hasExpired(at: date(600)))
+    }
+
+    func testPlayingTimePauseFreezesCountdown() {
+        // Same sequence, but pausing freezes the clock: 420s should remain.
+        var timer = MetronomeTimer(duration: 600)
+        timer.start(from: date(0))
+        timer.pause(bankingElapsed: true, at: date(180))
+        timer.start(from: date(300))
+        XCTAssertEqual(timer.remaining(at: date(300)) ?? 0, 420, accuracy: 0.001)
+        XCTAssertFalse(timer.hasExpired(at: date(600)))
+    }
+
+    func testPlayingTimeAccumulatesAcrossSeveralPauses() {
+        // Three stops of 100s each should still add up to 300s of real play.
+        var timer = MetronomeTimer(duration: 600)
+        timer.start(from: date(0))
+        timer.pause(bankingElapsed: true, at: date(100))
+        timer.start(from: date(200))
+        timer.pause(bankingElapsed: true, at: date(300))
+        timer.start(from: date(400))
+        timer.pause(bankingElapsed: true, at: date(500))
+        timer.start(from: date(600))
+        XCTAssertEqual(timer.remaining(at: date(600)) ?? 0, 300, accuracy: 0.001)
+    }
+
+    func testRepeatedStartDoesNotReset() {
+        // Calling start while already running must be a no-op, or a rebuild
+        // of the audio engine would silently restart the countdown.
+        var timer = MetronomeTimer(duration: 600)
+        timer.start(from: date(0))
+        timer.start(from: date(120))
+        XCTAssertEqual(timer.remaining(at: date(120)) ?? 0, 480, accuracy: 0.001)
+    }
+
     func testZeroDurationNeverRuns() {
         var timer = MetronomeTimer(duration: 0)
         timer.start(from: date(0))
