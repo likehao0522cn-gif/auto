@@ -43,13 +43,18 @@ struct MetronomeView: View {
         // one row pinned directly above the keyboard, so "确定" sits where the
         // send button is in a chat app.
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            if isShowingBPMInput, isBPMInputFocused {
+            // Show on isShowingBPMInput alone. Requiring focus too was a
+            // deadlock: the field only appeared once focus was set, but focus
+            // could only be set on a field that already existed, so the bar
+            // never appeared and no keyboard came up.
+            if isShowingBPMInput {
                 HStack(spacing: 10) {
                     TextField("输入 20 到 300", text: $bpmInput)
                         .keyboardType(.numberPad)
                         .textFieldStyle(.roundedBorder)
                         .focused($isBPMInputFocused)
                         .submitLabel(.done)
+                        .onAppear { isBPMInputFocused = true }
                         .onSubmit { applyManualBPMInput() }
                         .accessibilityLabel(Text(verbatim: "手动输入速度"))
                         .accessibilityHint(Text(verbatim: "请输入 20 到 300 的整数 BPM，然后点确定"))
@@ -154,6 +159,9 @@ struct MetronomeView: View {
                         isShowingBPMInput = true
                     }
                 }
+                // onAppear on the field sets focus once it exists. Setting it
+                // here as well is harmless and covers the case where the bar
+                // is already on screen.
                 Task { @MainActor in
                     await Task.yield()
                     isBPMInputFocused = true
