@@ -262,10 +262,20 @@ struct MetronomeView: View {
         case .success(let bpm):
             bpmInputError = nil
             bpmInput = "\(bpm)"
-            isBPMInputFocused = false
+            // Apply the tempo first, so the change takes effect immediately.
             metronome.applyManualBPM(Double(bpm))
-            withAnimation {
-                isShowingBPMInput = false
+            // Then dismiss. Drop focus so the keyboard animates away, and
+            // remove the bar only after that finishes; hiding the bar in the
+            // same frame as clearing focus pulled the field out from under
+            // the keyboard mid-animation.
+            isBPMInputFocused = false
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(250))
+                // A new input session may have started in the meantime.
+                guard !isBPMInputFocused else { return }
+                withAnimation {
+                    isShowingBPMInput = false
+                }
             }
         case .failure(let error):
             let message: String
